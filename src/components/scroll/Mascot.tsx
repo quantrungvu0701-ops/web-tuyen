@@ -44,7 +44,7 @@ export function Mascot() {
         opacity: mascotAnchor.hidden ? 0 : 1,
       }}
       transition={
-        shouldReduceMotion
+        shouldReduceMotion || mascotAnchor.instant
           ? { duration: 0 }
           : { type: "spring", stiffness: 90, damping: 18, mass: 0.9 }
       }

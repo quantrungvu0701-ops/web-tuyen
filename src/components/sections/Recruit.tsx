@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { VideoCamera } from "@phosphor-icons/react";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
@@ -61,12 +61,22 @@ function RecruitContent() {
 }
 
 function Timeline() {
+  const isActive = useSectionActive();
   const { setMascotOverride } = useSectionFlow();
-  const [activeStep, setActiveStep] = useState<number | null>(null);
+  // Starts at step 1, not "nothing hovered yet" — the mascot always has a
+  // post inside the timeline to stand at, never a section-level fallback
+  // corner outside it.
+  const [activeStep, setActiveStep] = useState(0);
+  const activeStepRef = useRef(0);
+  useEffect(() => {
+    activeStepRef.current = activeStep;
+  }, [activeStep]);
   const pointRefs = useRef<(HTMLButtonElement | null)[]>([]);
 
   // Hand the mascot the point's position as viewport percentages, which is
-  // the coordinate space the follower animates in.
+  // the coordinate space the follower animates in. Used for deliberate hops
+  // (hover/click/focus) — these keep the spring, so moving between points
+  // still glides.
   const moveMascotTo = useCallback(
     (stepIndex: number) => {
       const point = pointRefs.current[stepIndex];
@@ -82,10 +92,47 @@ function Timeline() {
     [setMascotOverride],
   );
 
-  const release = useCallback(() => {
-    setMascotOverride(null);
-    setActiveStep(null);
-  }, [setMascotOverride]);
+  // Keeps the mascot glued to whichever step it currently rests at as the
+  // page moves — both because this section can scroll further to reveal the
+  // videos below, and because activeIndex (and so isActive) flips the
+  // instant the pinned scroll into this section *starts*, well before the
+  // 800ms animation finishes, so the very first measurement on arrival is
+  // otherwise taken while the timeline is still off-screen. Marked instant:
+  // a spring chasing a target that's also moving every scroll frame just
+  // lags behind, the same issue the About us / member-photo morphs hit.
+  useEffect(() => {
+    if (!isActive) return;
+
+    const track = () => {
+      const point = pointRefs.current[activeStepRef.current];
+      if (!point) return;
+      const rect = point.getBoundingClientRect();
+      setMascotOverride({
+        x: ((rect.left + rect.width / 2) / window.innerWidth) * 100,
+        y: ((rect.top - 44) / window.innerHeight) * 100,
+        scale: 0.7,
+        instant: true,
+      });
+    };
+
+    let frame = 0;
+    const scheduleTrack = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        track();
+      });
+    };
+
+    track();
+    window.addEventListener("scroll", scheduleTrack, { passive: true });
+    window.addEventListener("resize", scheduleTrack);
+    return () => {
+      window.removeEventListener("scroll", scheduleTrack);
+      window.removeEventListener("resize", scheduleTrack);
+      if (frame) cancelAnimationFrame(frame);
+    };
+  }, [isActive, setMascotOverride]);
 
   return (
     <div className="w-full overflow-x-auto pb-2">
@@ -125,10 +172,10 @@ function Timeline() {
                 type="button"
                 aria-expanded={isStepActive}
                 onMouseEnter={() => moveMascotTo(i)}
-                onMouseLeave={release}
+                onMouseLeave={() => moveMascotTo(0)}
                 onFocus={() => moveMascotTo(i)}
-                onBlur={release}
-                onClick={() => (isStepActive ? release() : moveMascotTo(i))}
+                onBlur={() => moveMascotTo(0)}
+                onClick={() => moveMascotTo(i)}
                 className="flex size-11 cursor-pointer items-center justify-center rounded-full border-2 border-accent bg-background font-display text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent hover:text-accent-foreground"
               >
                 {i + 1}

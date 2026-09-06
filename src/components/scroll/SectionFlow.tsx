@@ -20,6 +20,15 @@ export type MascotAnchor = {
   rotate?: number;
   flip?: boolean;
   hidden?: boolean;
+  /**
+   * Skip the spring and snap directly to this position. For overrides that
+   * re-fire continuously to stay glued to a moving target (e.g. the Tuyển
+   * timeline re-measuring on scroll) — a spring chasing a target that
+   * updates every frame just makes the mascot visibly lag behind. Leave
+   * unset for a deliberate hop (hovering a different point), which should
+   * still glide.
+   */
+  instant?: boolean;
 };
 
 type Registration = {
