@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { bottomRowMembers, topRowMembers, type Member } from "@/lib/site-config";
+import { reveal } from "@/lib/motion";
 
 export function BigFatFamily({ index }: { index: number }) {
   return (
@@ -27,8 +28,7 @@ function FamilyContent() {
     <>
       <motion.h2
         className="flex flex-col items-center gap-1 text-center"
-        initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
-        animate={shouldReduceMotion ? undefined : { opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
+        {...reveal(shouldReduceMotion, isActive, { opacity: 0, y: 20 })}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
         <span className="font-display text-xl font-medium tracking-tight sm:text-2xl">
@@ -83,13 +83,17 @@ function MemberFigure({
         onFocus={() => setIsRaised(true)}
         onBlur={() => setIsRaised(false)}
         className="flex w-full cursor-pointer flex-col items-center"
-        initial={shouldReduceMotion ? undefined : { opacity: 0, y: 24 }}
+        initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
         animate={
           shouldReduceMotion
-            ? undefined
+            ? { opacity: 1, y: isRaised ? shift : 0 }
             : { opacity: isActive ? 1 : 0, y: isActive ? (isRaised ? shift : 0) : 24 }
         }
-        transition={{ duration: 0.45, delay: isActive && !isRaised ? delay : 0, ease: [0.16, 1, 0.3, 1] }}
+        transition={
+          shouldReduceMotion
+            ? { duration: 0 }
+            : { duration: 0.45, delay: isActive && !isRaised ? delay : 0, ease: [0.16, 1, 0.3, 1] }
+        }
       >
         <SmartImage
           src={member.imageSrc}

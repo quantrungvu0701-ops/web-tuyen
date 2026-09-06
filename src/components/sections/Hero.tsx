@@ -17,8 +17,10 @@ export function Hero({ index }: { index: number }) {
       // The mascot already lives inside the hero artwork, so it only joins the
       // page from the About section onwards.
       anchor={{ x: 50, y: 110, hidden: true }}
-      // Leaves room for the nav bar above so the hero still fills one screen.
-      className="flex min-h-[calc(100dvh-4.5rem)] flex-col justify-between overflow-hidden"
+      // Sized by its content rather than stretched to the viewport: the 2.7:1
+      // artwork already fills most of a laptop screen, and forcing full height
+      // just opened a dead gap under it.
+      className="flex flex-col overflow-hidden"
     >
       <div className="relative">
         {/* The artwork is a wide 2.7:1 banner with the headline baked in, so it
@@ -39,7 +41,7 @@ export function Hero({ index }: { index: number }) {
         </div>
       </div>
 
-      <div className="flex flex-col items-center gap-6 px-5 py-8 md:py-10">
+      <div className="flex flex-col items-center gap-6 px-5 py-10 md:py-14">
         <div className="md:hidden">
           <Countdown deadline={siteConfig.applicationDeadline} />
         </div>

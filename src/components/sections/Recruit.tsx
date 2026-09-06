@@ -7,6 +7,7 @@ import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { useSectionFlow } from "@/components/scroll/SectionFlow";
 import { ApplyButton } from "@/components/ui/ApplyButton";
 import { recruitSteps, recruitVideos } from "@/lib/site-config";
+import { reveal } from "@/lib/motion";
 
 /** Zigzag: the odd points sit low, the even points sit high. */
 const POINT_X = [10, 30, 50, 70, 90];
@@ -33,8 +34,7 @@ function RecruitContent() {
     <>
       <motion.h2
         className="px-5 text-center font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl"
-        initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
-        animate={shouldReduceMotion ? undefined : { opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
+        {...reveal(shouldReduceMotion, isActive, { opacity: 0, y: 20 })}
         transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
       >
         Hành trình ứng tuyển

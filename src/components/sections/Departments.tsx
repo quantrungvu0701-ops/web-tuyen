@@ -4,6 +4,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { bottomRowMembers, departments } from "@/lib/site-config";
+import { reveal } from "@/lib/motion";
 
 export function Departments({ index }: { index: number }) {
   return (
@@ -32,16 +33,7 @@ function DepartmentsContent() {
           <motion.li
             key={department.memberId}
             className="flex flex-col items-center gap-5"
-            initial={shouldReduceMotion ? undefined : { opacity: 0, y: 48, scale: 0.94 }}
-            animate={
-              shouldReduceMotion
-                ? undefined
-                : {
-                    opacity: isActive ? 1 : 0,
-                    y: isActive ? 0 : 48,
-                    scale: isActive ? 1 : 0.94,
-                  }
-            }
+            {...reveal(shouldReduceMotion, isActive, { opacity: 0, y: 48, scale: 0.94 })}
             transition={{ duration: 0.7, delay: i * 0.1, ease: [0.16, 1, 0.3, 1] }}
           >
             <SmartImage

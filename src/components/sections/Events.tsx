@@ -6,13 +6,14 @@ import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { Marquee } from "@/components/ui/Marquee";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { about, eventRows, supportProjects, type EventImage, type EventRow } from "@/lib/site-config";
+import { reveal } from "@/lib/motion";
 
 export function Events({ index }: { index: number }) {
   return (
     <FlowSection
       id="events"
       index={index}
-      anchor={{ x: 8, y: 82, scale: 0.9, flip: true }}
+      anchor={{ x: 6, y: 90, scale: 0.9, flip: true }}
       className="py-16 md:py-24"
     >
       <EventsContent />
@@ -31,10 +32,7 @@ function EventsContent() {
             back to horizontal as this section arrives. */}
         <motion.span
           className="font-display text-lg font-semibold tracking-tight text-accent sm:text-xl"
-          initial={shouldReduceMotion ? undefined : { rotate: -90, opacity: 0, y: 16 }}
-          animate={
-            shouldReduceMotion ? undefined : { rotate: isActive ? 0 : -90, opacity: isActive ? 1 : 0, y: isActive ? 0 : 16 }
-          }
+          {...reveal(shouldReduceMotion, isActive, { rotate: -90, opacity: 0, y: 16 })}
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           {about.label}
@@ -42,8 +40,7 @@ function EventsContent() {
 
         <motion.h2
           className="font-display text-3xl font-semibold tracking-tight text-balance sm:text-5xl md:text-6xl"
-          initial={shouldReduceMotion ? undefined : { opacity: 0, y: 20 }}
-          animate={shouldReduceMotion ? undefined : { opacity: isActive ? 1 : 0, y: isActive ? 0 : 20 }}
+          {...reveal(shouldReduceMotion, isActive, { opacity: 0, y: 20 })}
           transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
         >
           Các sự kiện nổi bật

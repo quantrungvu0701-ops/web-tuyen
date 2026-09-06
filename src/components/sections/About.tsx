@@ -5,6 +5,7 @@ import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { about } from "@/lib/site-config";
+import { reveal } from "@/lib/motion";
 
 /**
  * Sizes the rotated "About us" label so its rendered height matches the
@@ -59,22 +60,16 @@ function AboutContent() {
   const paragraphRef = useRef<HTMLDivElement>(null);
   const { labelRef, fontSize } = useHeightMatchedType(paragraphRef);
 
-  const reveal = shouldReduceMotion
-    ? {}
-    : {
-        initial: { opacity: 0, y: 24 },
-        animate: isActive ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 },
-        transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
-      };
+  const fade = reveal(shouldReduceMotion, isActive, { opacity: 0, y: 24 });
+  const easing = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
     <div className="mx-auto grid w-full max-w-6xl grid-cols-[auto_1fr] items-stretch gap-5 px-5 sm:gap-8 sm:px-6 lg:grid-cols-[auto_1fr_1fr] lg:px-8">
       {/* Vertical label — morphs to the horizontal header in the next section. */}
       <motion.div
         className="flex items-center"
-        initial={shouldReduceMotion ? undefined : { opacity: 0, x: -16 }}
-        animate={shouldReduceMotion ? undefined : { opacity: isActive ? 1 : 0, x: isActive ? 0 : -16 }}
-        transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+        {...reveal(shouldReduceMotion, isActive, { opacity: 0, x: -16 })}
+        transition={easing}
       >
         <span
           ref={labelRef}
@@ -87,7 +82,8 @@ function AboutContent() {
 
       <motion.div
         ref={paragraphRef}
-        {...reveal}
+        {...fade}
+        transition={easing}
         className="flex flex-col justify-center gap-5 py-2"
       >
         {about.paragraphs.map((paragraph) => (
@@ -98,8 +94,8 @@ function AboutContent() {
       </motion.div>
 
       <motion.div
-        {...reveal}
-        transition={{ duration: 0.6, delay: 0.12, ease: [0.16, 1, 0.3, 1] }}
+        {...fade}
+        transition={{ ...easing, delay: 0.12 }}
         className="col-span-2 lg:col-span-1"
       >
         <SmartImage
