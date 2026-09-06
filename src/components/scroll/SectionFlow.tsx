@@ -31,6 +31,7 @@ type Registration = {
 
 type SectionFlowValue = {
   activeIndex: number;
+  activeSectionId: string | null;
   isTransitioning: boolean;
   /** Anchor the mascot should currently occupy (override wins over section). */
   mascotAnchor: MascotAnchor;
@@ -265,6 +266,7 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
 
     return {
       activeIndex,
+      activeSectionId: sections.find((s) => s.index === activeIndex)?.id ?? null,
       isTransitioning,
       mascotAnchor: override ?? sectionAnchor,
       registerSection,

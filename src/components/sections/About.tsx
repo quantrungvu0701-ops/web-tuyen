@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
+import { useAboutUsSlot } from "@/components/scroll/AboutUsMorph";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { about } from "@/lib/site-config";
 import { reveal } from "@/lib/motion";
@@ -60,19 +61,36 @@ function AboutContent() {
   const paragraphRef = useRef<HTMLDivElement>(null);
   const { labelRef, fontSize } = useHeightMatchedType(paragraphRef);
 
+  // The visible label is the floating morph element (see AboutUsMorph); this
+  // one becomes an invisible placeholder that reserves the grid column's
+  // width and doubles as the morph's measurement anchor. Under reduced
+  // motion there is no floating label, so this stays the real, visible one.
+  const [labelEl, setLabelEl] = useState<HTMLSpanElement | null>(null);
+  // A stable ref callback: an inline arrow here would get a new identity on
+  // every render, which makes React detach and reattach it every time —
+  // calling setLabelEl(null) then setLabelEl(node) in a loop.
+  const setLabelRef = useCallback(
+    (node: HTMLSpanElement | null) => {
+      labelRef.current = node;
+      setLabelEl(node);
+    },
+    [labelRef],
+  );
+  useAboutUsSlot("about", labelEl, -90);
+
   const fade = reveal(shouldReduceMotion, isActive, { opacity: 0, y: 24 });
   const easing = { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
     <div className="mx-auto grid w-full max-w-6xl grid-cols-[auto_1fr] items-stretch gap-5 px-5 sm:gap-8 sm:px-6 lg:grid-cols-[auto_1fr_1fr] lg:px-8">
-      {/* Vertical label — morphs to the horizontal header in the next section. */}
       <motion.div
         className="flex items-center"
-        {...reveal(shouldReduceMotion, isActive, { opacity: 0, x: -16 })}
-        transition={easing}
+        initial={false}
+        animate={{ opacity: shouldReduceMotion ? 1 : 0 }}
+        transition={{ duration: 0 }}
       >
         <span
-          ref={labelRef}
+          ref={setLabelRef}
           style={{ fontSize, writingMode: "vertical-rl", rotate: "180deg" }}
           className="font-display leading-none font-semibold tracking-tight text-accent"
         >

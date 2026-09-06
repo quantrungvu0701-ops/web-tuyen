@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
+import { useAboutUsSlot } from "@/components/scroll/AboutUsMorph";
 import { Marquee } from "@/components/ui/Marquee";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { about, eventRows, supportProjects, type EventImage, type EventRow } from "@/lib/site-config";
@@ -25,15 +26,22 @@ function EventsContent() {
   const isActive = useSectionActive();
   const shouldReduceMotion = useReducedMotion();
 
+  // The visible label is the floating morph element that flies in from About
+  // (see AboutUsMorph); this one is an invisible placeholder that reserves
+  // its line of space and anchors where the morph lands. Under reduced
+  // motion there is no floating label, so this stays the real, visible one.
+  const [labelEl, setLabelEl] = useState<HTMLSpanElement | null>(null);
+  useAboutUsSlot("events", labelEl, 0);
+
   return (
     <div className="flex flex-col gap-12 md:gap-16">
       <header className="mx-auto flex w-full max-w-6xl flex-col items-center gap-3 px-5 text-center sm:px-6 lg:px-8">
-        {/* The vertical "About us" label from the previous section, rotated
-            back to horizontal as this section arrives. */}
         <motion.span
+          ref={setLabelEl}
+          initial={false}
+          animate={{ opacity: shouldReduceMotion ? 1 : 0 }}
+          transition={{ duration: 0 }}
           className="font-display text-lg font-semibold tracking-tight text-accent sm:text-xl"
-          {...reveal(shouldReduceMotion, isActive, { rotate: -90, opacity: 0, y: 16 })}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
         >
           {about.label}
         </motion.span>
