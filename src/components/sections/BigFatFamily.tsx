@@ -3,6 +3,7 @@
 import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
+import { useMemberMorphSlot } from "@/components/scroll/MemberMorph";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { bottomRowMembers, topRowMembers, type Member } from "@/lib/site-config";
 import { reveal } from "@/lib/motion";
@@ -48,7 +49,7 @@ function FamilyContent() {
 
         <ul className="grid w-full grid-cols-2 justify-items-center gap-4 sm:gap-6 md:grid-cols-3">
           {bottomRowMembers.map((member, i) => (
-            <MemberFigure key={member.id} member={member} direction="down" delay={0.24 + i * 0.06} />
+            <MemberFigure key={member.id} member={member} direction="down" delay={0.24 + i * 0.06} morphs />
           ))}
         </ul>
       </div>
@@ -60,15 +61,39 @@ function MemberFigure({
   member,
   direction,
   delay,
+  morphs = false,
 }: {
   member: Member;
   direction: "up" | "down";
   delay: number;
+  /** Bottom-row (E/F/G) members morph into a department card in Ba ban. */
+  morphs?: boolean;
 }) {
   const isActive = useSectionActive();
   const shouldReduceMotion = useReducedMotion();
   const [isRaised, setIsRaised] = useState(false);
   const shift = direction === "up" ? -20 : 20;
+
+  const [imageEl, setImageEl] = useState<HTMLDivElement | null>(null);
+  useMemberMorphSlot(member.id, "bo7", morphs ? imageEl : null);
+
+  // Morphing cards keep the photo at rest (no hover raise, no entrance
+  // slide): it's the floating cross-section clone that's actually visible
+  // once mounted, and that clone measures this element's position — letting
+  // it move independently would desync the two. Non-morphing cards (A–D)
+  // keep the original raise-on-hover/slide-in-on-entrance behavior.
+  const hiddenForMorph = morphs && !shouldReduceMotion;
+  const raiseY = morphs ? 0 : isRaised ? shift : 0;
+
+  const initial = shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: morphs ? 0 : 24 };
+  const animate = hiddenForMorph
+    ? { opacity: 0, y: 0 }
+    : shouldReduceMotion
+      ? { opacity: 1, y: raiseY }
+      : { opacity: isActive ? 1 : 0, y: isActive ? raiseY : morphs ? 0 : 24 };
+  const transition = shouldReduceMotion
+    ? { duration: 0 }
+    : { duration: 0.45, delay: isActive && !isRaised ? delay : 0, ease: [0.16, 1, 0.3, 1] as const };
 
   return (
     <li
@@ -76,31 +101,28 @@ function MemberFigure({
       onMouseEnter={() => setIsRaised(true)}
       onMouseLeave={() => setIsRaised(false)}
     >
-      <motion.button
+      <button
         type="button"
         aria-expanded={isRaised}
         onClick={() => setIsRaised((current) => !current)}
         onFocus={() => setIsRaised(true)}
         onBlur={() => setIsRaised(false)}
         className="flex w-full cursor-pointer flex-col items-center"
-        initial={shouldReduceMotion ? { opacity: 1, y: 0 } : { opacity: 0, y: 24 }}
-        animate={
-          shouldReduceMotion
-            ? { opacity: 1, y: isRaised ? shift : 0 }
-            : { opacity: isActive ? 1 : 0, y: isActive ? (isRaised ? shift : 0) : 24 }
-        }
-        transition={
-          shouldReduceMotion
-            ? { duration: 0 }
-            : { duration: 0.45, delay: isActive && !isRaised ? delay : 0, ease: [0.16, 1, 0.3, 1] }
-        }
       >
-        <SmartImage
-          src={member.imageSrc}
-          alt={`${member.name} — ${member.role}`}
-          placeholderLabel={`[TODO] ${member.name}`}
-          className="h-44 w-full rounded-2xl sm:h-52"
-        />
+        <motion.div
+          ref={setImageEl}
+          className="h-44 w-full overflow-hidden rounded-2xl sm:h-52"
+          initial={initial}
+          animate={animate}
+          transition={transition}
+        >
+          <SmartImage
+            src={member.imageSrc}
+            alt={`${member.name} — ${member.role}`}
+            placeholderLabel={`[TODO] ${member.name}`}
+            className="h-full w-full"
+          />
+        </motion.div>
 
         {/* Space is reserved so revealing the name never shifts the row. */}
         <motion.span
@@ -112,7 +134,7 @@ function MemberFigure({
           <span className="font-display text-lg font-semibold">{member.name}</span>
           <span className="text-xs text-muted-foreground sm:text-sm">{member.role}</span>
         </motion.span>
-      </motion.button>
+      </button>
     </li>
   );
 }

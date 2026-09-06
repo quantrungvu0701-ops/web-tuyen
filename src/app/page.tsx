@@ -1,6 +1,7 @@
 import { SectionFlowProvider } from "@/components/scroll/SectionFlow";
 import { Mascot } from "@/components/scroll/Mascot";
 import { AboutUsMorphProvider } from "@/components/scroll/AboutUsMorph";
+import { MemberMorphProvider } from "@/components/scroll/MemberMorph";
 import { NavBar } from "@/components/layout/NavBar";
 import { SiteFooter } from "@/components/layout/SiteFooter";
 import { Hero } from "@/components/sections/Hero";
@@ -15,14 +16,16 @@ export default function Home() {
     <SectionFlowProvider>
       <NavBar />
       <AboutUsMorphProvider>
-        <main className="flex-1">
-          <Hero index={0} />
-          <About index={1} />
-          <Events index={2} />
-          <BigFatFamily index={3} />
-          <Departments index={4} />
-          <Recruit index={5} />
-        </main>
+        <MemberMorphProvider>
+          <main className="flex-1">
+            <Hero index={0} />
+            <About index={1} />
+            <Events index={2} />
+            <BigFatFamily index={3} />
+            <Departments index={4} />
+            <Recruit index={5} />
+          </main>
+        </MemberMorphProvider>
       </AboutUsMorphProvider>
       <Mascot />
       <SiteFooter />
