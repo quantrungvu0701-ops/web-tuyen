@@ -31,21 +31,14 @@ const UNITS: { key: keyof Omit<TimeLeft, "done">; label: string }[] = [
 type CountdownProps = {
   deadline: string;
   className?: string;
-  variant?: "default" | "compact";
-  /** Use on dark section backgrounds (e.g. the final CTA) to flip the box colors. */
-  inverted?: boolean;
+  size?: "md" | "lg";
 };
 
 /**
  * Renders a stable placeholder on first paint (server and client agree, so
  * no hydration mismatch) then starts ticking client-side after mount.
  */
-export function Countdown({
-  deadline,
-  className = "",
-  variant = "default",
-  inverted = false,
-}: CountdownProps) {
+export function Countdown({ deadline, className = "", size = "lg" }: CountdownProps) {
   const target = useMemo(() => new Date(deadline).getTime(), [deadline]);
   const [time, setTime] = useState<TimeLeft | null>(null);
 
@@ -60,10 +53,10 @@ export function Countdown({
   }, [target]);
 
   const display = time ?? { days: 0, hours: 0, minutes: 0, seconds: 0, done: false };
-  const boxSize =
-    variant === "compact" ? "min-w-[3rem] px-2 py-2 text-xl" : "min-w-[3.75rem] px-3 py-3 text-2xl sm:text-3xl";
-  const boxColor = inverted ? "bg-background text-foreground" : "bg-foreground text-background";
-  const labelColor = inverted ? "text-background/70" : "text-muted-foreground";
+  const box =
+    size === "lg"
+      ? "min-w-[3.5rem] px-3 py-2.5 text-2xl sm:min-w-[4.5rem] sm:px-4 sm:py-3 sm:text-4xl"
+      : "min-w-[2.75rem] px-2 py-2 text-lg";
 
   if (time?.done) {
     return (
@@ -87,12 +80,15 @@ export function Countdown({
       {UNITS.map((unit) => (
         <div key={unit.key} className="flex flex-col items-center gap-1.5">
           <div
-            className={`flex items-center justify-center rounded-xl font-display font-semibold tabular-nums ${boxColor} ${boxSize}`}
+            className={`flex items-center justify-center rounded-xl bg-foreground font-display font-semibold text-background shadow-[0_4px_16px_rgba(36,31,28,0.18)] tabular-nums ${box}`}
             aria-hidden="true"
           >
             {String(display[unit.key]).padStart(2, "0")}
           </div>
-          <span className={`text-[11px] font-medium tracking-wide uppercase ${labelColor}`} aria-hidden="true">
+          <span
+            className="text-[10px] font-semibold tracking-wider text-foreground/70 uppercase sm:text-[11px]"
+            aria-hidden="true"
+          >
             {unit.label}
           </span>
         </div>

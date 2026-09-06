@@ -57,6 +57,48 @@ body {
   color: var(--foreground);
 }
 
+/* Marquee rows (event strips, hero promo banner). The track holds two copies
+   of its children, so travelling exactly half its width loops seamlessly. */
+@keyframes marquee-left {
+  from {
+    transform: translateX(0);
+  }
+  to {
+    transform: translateX(-50%);
+  }
+}
+
+@keyframes marquee-right {
+  from {
+    transform: translateX(-50%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.marquee-track {
+  animation-duration: var(--marquee-duration, 40s);
+  animation-timing-function: linear;
+  animation-iteration-count: infinite;
+  will-change: transform;
+}
+
+.marquee-track[data-direction="left"] {
+  animation-name: marquee-left;
+}
+
+.marquee-track[data-direction="right"] {
+  animation-name: marquee-right;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .marquee-track {
+    animation: none !important;
+    transform: none !important;
+  }
+}
+
 ::selection {
   background: var(--accent);
   color: var(--accent-foreground);

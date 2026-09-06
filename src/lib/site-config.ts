@@ -7,177 +7,201 @@ export const siteConfig = {
   orgShortName: "HSV FTU",
 
   // TODO: confirm the incoming cohort code (e.g. "K65") with BCH before launch.
-  freshmanCohort: "K...",
+  freshmanCohort: "K65",
 
-  // TODO: replace with the real Google Form URL. Both CTA buttons on the page
-  // read from this single constant, so updating it here updates the whole site.
+  // TODO: replace with the real Google Form URL. Every "Đăng ký ngay" button
+  // on the site reads from this single constant.
   googleFormUrl: "https://forms.gle/TODO-REPLACE-WITH-REAL-FORM-URL",
 
   // TODO: confirm the real application deadline with BCH (ISO 8601, GMT+7).
   applicationDeadline: "2026-10-18T23:59:59+07:00",
 
-  // TODO: fanpage URL, contact email and office location are all placeholders.
+  // TODO: fanpage URL, contact email, hotline and socials are placeholders.
   contact: {
-    fanpageUrl: "https://www.facebook.com/TODO-fanpage",
+    hotline: "[TODO: (+84) số hotline] (Ms. [TODO])",
     email: "TODO@ftu.edu.vn",
-    officeLocation: "[TODO: ví dụ — Tầng 1, Nhà B, Đại học Ngoại thương]",
+    facebookUrl: "https://www.facebook.com/TODO-fanpage",
+    tiktokUrl: "https://www.tiktok.com/@TODO",
+    instagramUrl: "https://www.instagram.com/TODO",
+    threadsUrl: "https://www.threads.net/@TODO",
   },
 } as const;
 
-export type Stat = {
-  value: string;
-  label: string;
+/* ------------------------------------------------------------------ *
+ * 1. Hero — promo banner for the side event
+ * ------------------------------------------------------------------ */
+
+export const promoBanner = {
+  // TODO: drop the side-event banner artwork in as public/promo-banner.png
+  // (wide strip, transparent or full-bleed). Until then a placeholder strip
+  // renders in its place.
+  imageSrc: "/promo-banner.png",
+  alt: "[TODO: tên sự kiện bên lề]",
+  href: "/skbl",
+} as const;
+
+/* ------------------------------------------------------------------ *
+ * 2. About
+ * ------------------------------------------------------------------ */
+
+export const about = {
+  label: "About us",
+  paragraphs: [
+    "Hội Sinh viên trường Đại học Ngoại thương được thành lập ngày 15 tháng 03 năm 2003, là một tổ chức Chính trị - Xã hội trực thuộc Hội Sinh viên Việt Nam.",
+    "Hội Sinh viên trường Đại học Ngoại thương là tổ chức đại diện cho ngôi nhà chung BFF – Big Fat Family – với 3 Ban và 2 Câu lạc bộ trực thuộc.",
+  ],
+  // TODO: replace with a real photo of the Hội (public/about.jpg).
+  imageSrc: "/about.jpg",
+  imageAlt: "[TODO: mô tả ảnh tập thể HSV FTU]",
+} as const;
+
+/* ------------------------------------------------------------------ *
+ * 3. Events
+ * ------------------------------------------------------------------ */
+
+export type EventImage = {
+  /** 1–28, matches public/images/events/<n>.jpg so files are easy to drop in. */
+  index: number;
+  caption: string;
+  href: string;
 };
 
-// TODO: insert real numbers from BCH. Do not replace "[TODO]" with an invented
-// figure — an honest placeholder is more trustworthy than a made-up stat.
-export const trustStats: Stat[] = [
-  { value: "[TODO]", label: "năm hoạt động" },
-  { value: "[TODO]", label: "thành viên hiện tại" },
-  { value: "[TODO]", label: "ban chuyên môn" },
-  { value: "[TODO]", label: "thành tích tiêu biểu" },
-];
-
-export type Benefit = {
+export type EventRow = {
   title: string;
-  description: string;
+  /** Label alignment; images scroll the opposite way. */
+  align: "left" | "right";
+  direction: "right" | "left";
+  images: EventImage[];
 };
 
-// TODO: these outcome descriptions are reasonable drafts, not verified
-// quotes or figures. Swap in specific, real outcomes from past members
-// before launch (e.g. an event they ran, a company they connected with).
-export const benefits: Benefit[] = [
+// TODO: every caption and "see more" link below is a placeholder. Images are
+// numbered 1–28 — drop files in as public/images/events/1.jpg … 28.jpg.
+function makeImages(from: number, to: number): EventImage[] {
+  return Array.from({ length: to - from + 1 }, (_, i) => ({
+    index: from + i,
+    caption: `[TODO: tên sự kiện ${from + i}]`,
+    href: "https://example.com/TODO",
+  }));
+}
+
+export const eventRows: EventRow[] = [
   {
-    title: "Kỹ năng tổ chức sự kiện",
-    description:
-      "Từ lên kế hoạch đến vận hành thực tế — bạn trực tiếp đứng sau những sự kiện quy mô hàng trăm người, không chỉ ngồi nghe lý thuyết.",
+    title: "Chương trình chính trị",
+    align: "left",
+    direction: "right",
+    images: makeImages(1, 8),
   },
   {
-    title: "Networking với doanh nghiệp & alumni",
-    description:
-      "Tiếp xúc trực tiếp với đối tác doanh nghiệp và mạng lưới cựu thành viên đã đi làm — những mối quan hệ khó có được nếu chỉ học trên giảng đường.",
+    title: "Chương trình sân khấu",
+    align: "right",
+    direction: "left",
+    images: makeImages(9, 16),
   },
   {
-    title: "Một dòng CV nổi bật",
-    description:
-      "Kinh nghiệm điều phối dự án, làm việc nhóm áp lực cao và ra quyết định thực tế — đúng thứ nhà tuyển dụng tìm kiếm ở một sinh viên năm nhất.",
+    title: "Chương trình thiện nguyện",
+    align: "left",
+    direction: "right",
+    images: makeImages(17, 22),
   },
   {
-    title: "Một cộng đồng thật sự",
-    description:
-      "Những người bạn cùng thức khuya chuẩn bị sự kiện, cùng ăn mừng khi hoàn thành — cộng đồng gắn bó trong suốt hành trình đại học của bạn.",
+    title: "Chương trình nội bộ",
+    align: "right",
+    direction: "left",
+    images: makeImages(23, 28),
   },
 ];
 
-export type Department = {
+export type SupportProject = {
   name: string;
-  description: string;
-  skills: string[];
+  imageSrc: string;
+  href: string;
 };
 
-// TODO: verify these 2-3 line descriptions and skill tags with each ban's
-// trưởng ban — they're accurate-in-spirit drafts, not confirmed final copy.
-export const departments: Department[] = [
+// TODO: swap in the real project artwork and links.
+export const supportProjects: SupportProject[] = [
   {
-    name: "Ban Tổ chức",
-    description:
-      "Đứng sau hậu trường của mọi sự kiện lớn nhỏ của Hội — từ lên kịch bản, điều phối nhân sự đến xử lý tình huống phát sinh ngay tại chỗ.",
-    skills: ["Lập kế hoạch sự kiện", "Quản lý thời gian", "Xử lý tình huống"],
+    name: "FTU Lost and Found",
+    imageSrc: "/images/projects/lost-and-found.jpg",
+    href: "https://example.com/TODO",
   },
   {
-    name: "Ban Đối ngoại",
-    description:
-      "Cầu nối giữa Hội với doanh nghiệp, cựu sinh viên và các tổ chức bên ngoài — nơi bạn học cách đàm phán, thuyết trình và xây dựng quan hệ đối tác.",
-    skills: ["Đàm phán & thuyết trình", "Xây dựng quan hệ đối tác", "Ngoại ngữ ứng dụng"],
-  },
-  {
-    name: "Ban Truyền thông",
-    description:
-      "Kể câu chuyện của Hội tới hàng nghìn sinh viên — từ sản xuất nội dung, thiết kế hình ảnh đến lên chiến lược truyền thông cho từng chiến dịch.",
-    skills: ["Sáng tạo nội dung", "Thiết kế & hình ảnh", "Chiến lược truyền thông"],
+    name: "FTU Act for Change",
+    imageSrc: "/images/projects/act-for-change.jpg",
+    href: "https://example.com/TODO",
   },
 ];
 
-export type Testimonial = {
-  // TODO: every field below is a placeholder. Replace with a real quote and
-  // real attribution from a member who actually said it — never fabricate.
-  quote: string;
+/* ------------------------------------------------------------------ *
+ * 4. Bộ 7 — Big Fat Family
+ * ------------------------------------------------------------------ */
+
+export type Member = {
+  id: string;
   name: string;
   role: string;
+  /** public/images/members/<id>.png — transparent cut-out works best. */
+  imageSrc: string;
 };
 
-export const testimonials: Testimonial[] = [
-  {
-    quote:
-      "[TODO: trích dẫn cảm nhận thật từ một tân sinh viên năm ngoái đã tham gia HSV — ví dụ điều gì khiến bạn ấy quyết định nộp đơn, và trải nghiệm sau khi vào Hội.]",
-    name: "[TODO: Họ và tên]",
-    role: "[TODO: Ban ..., K...]",
-  },
-  {
-    quote:
-      "[TODO: trích dẫn cảm nhận thật từ một thành viên khác — có thể tập trung vào một khoảnh khắc hoặc sự kiện cụ thể đáng nhớ.]",
-    name: "[TODO: Họ và tên]",
-    role: "[TODO: Ban ..., K...]",
-  },
-  {
-    quote:
-      "[TODO: trích dẫn cảm nhận thật, ví dụ về kỹ năng hoặc mối quan hệ mà thành viên đó có được nhờ tham gia Hội.]",
-    name: "[TODO: Họ và tên]",
-    role: "[TODO: Ban ..., K...]",
-  },
+// TODO: replace names A–G with the real BCH members and drop their cut-out
+// portraits in as public/images/members/a.png … g.png.
+export const topRowMembers: Member[] = [
+  { id: "a", name: "A", role: "Phó chủ tịch", imageSrc: "/images/members/a.png" },
+  { id: "b", name: "B", role: "Phó chủ tịch", imageSrc: "/images/members/b.png" },
+  { id: "c", name: "C", role: "Phó chủ tịch", imageSrc: "/images/members/c.png" },
+  { id: "d", name: "D", role: "Phó chủ tịch", imageSrc: "/images/members/d.png" },
 ];
 
-export type TimelineStep = {
-  title: string;
-  description: string;
-  date: string;
+export const bottomRowMembers: Member[] = [
+  { id: "e", name: "E", role: "Trưởng Ban đối ngoại", imageSrc: "/images/members/e.png" },
+  { id: "f", name: "F", role: "Trưởng Ban tổ chức", imageSrc: "/images/members/f.png" },
+  { id: "g", name: "G", role: "Trưởng Ban truyền thông", imageSrc: "/images/members/g.png" },
+];
+
+/* ------------------------------------------------------------------ *
+ * 5. Ba ban — the bottom row morphs into these, E → F → G, left to right
+ * ------------------------------------------------------------------ */
+
+export type Department = {
+  /** Matches the member id it morphs from. */
+  memberId: string;
+  name: string;
 };
 
-// TODO: insert the real dates for each round from BCH.
-export const timelineSteps: TimelineStep[] = [
-  {
-    title: "Nộp đơn",
-    description: "Điền đơn ứng tuyển qua Google Form kèm thông tin cơ bản và nguyện vọng ban.",
-    date: "[TODO]",
-  },
-  {
-    title: "Vòng phỏng vấn",
-    description: "Trò chuyện trực tiếp cùng BCH để hiểu hơn về bạn và định hướng phù hợp.",
-    date: "[TODO]",
-  },
-  {
-    title: "Vòng Teamwork",
-    description: "Thử thách làm việc nhóm thực tế — nơi bạn thể hiện cách tư duy và phối hợp.",
-    date: "[TODO]",
-  },
-  {
-    title: "Kết quả",
-    description: "Công bố kết quả và chào đón thành viên mới chính thức gia nhập HSV FTU.",
-    date: "[TODO]",
-  },
+export const departments: Department[] = [
+  { memberId: "e", name: "Đối ngoại" },
+  { memberId: "f", name: "Tổ chức" },
+  { memberId: "g", name: "Truyền thông" },
 ];
 
-export type FaqItem = {
-  question: string;
-  answer: string;
+/* ------------------------------------------------------------------ *
+ * 6. Tuyển
+ * ------------------------------------------------------------------ */
+
+export type RecruitStep = {
+  name: string;
+  /** Shown when the step is hovered or tapped. */
+  duration: string;
 };
 
-// TODO: review these draft answers and add/adjust questions based on what
-// BCH actually gets asked each year.
-export const faqItems: FaqItem[] = [
-  {
-    question: "Mình chưa có kinh nghiệm thì có nộp được không?",
-    answer:
-      "Hoàn toàn được. HSV FTU tuyển thành viên dựa trên tinh thần chủ động và mong muốn học hỏi, không yêu cầu kinh nghiệm hoạt động trước đó. Mọi kỹ năng sẽ được đào tạo và tích lũy dần trong quá trình tham gia.",
-  },
-  {
-    question: "Vào Hội có mất nhiều thời gian không?",
-    answer:
-      "Khối lượng công việc thay đổi theo từng giai đoạn — có tuần bận rộn khi chuẩn bị sự kiện lớn, có tuần nhẹ nhàng hơn. BCH luôn ưu tiên cân bằng để thành viên vẫn đảm bảo việc học trên lớp.",
-  },
-  {
-    question: "Mình học ở cơ sở khác có tham gia được không?",
-    answer:
-      "Có. Nhiều hoạt động của Hội được tổ chức linh hoạt để thành viên ở các cơ sở khác nhau đều có thể tham gia và đóng góp.",
-  },
+// TODO: confirm the five round names and their real dates with BCH.
+export const recruitSteps: RecruitStep[] = [
+  { name: "Mở đơn", duration: "[TODO: ngày – ngày]" },
+  { name: "Hạn nộp đơn", duration: "[TODO: ngày]" },
+  { name: "Vòng phỏng vấn", duration: "[TODO: ngày – ngày]" },
+  { name: "Vòng Teamwork", duration: "[TODO: ngày – ngày]" },
+  { name: "Kết quả", duration: "[TODO: ngày]" },
 ];
+
+export const recruitVideos = {
+  // TODO: replace with the real YouTube video IDs (the part after "v=").
+  main: {
+    youtubeId: "TODO_VIDEO_ID",
+    title: "[TODO: tiêu đề video giới thiệu]",
+  },
+  mv: {
+    heading: `MV dành cho ${siteConfig.freshmanCohort}`,
+    youtubeId: "TODO_MV_VIDEO_ID",
+    title: `[TODO: tiêu đề MV dành cho ${siteConfig.freshmanCohort}]`,
+  },
+} as const;
