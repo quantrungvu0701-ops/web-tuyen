@@ -85,7 +85,7 @@ type Target = { x: number; y: number; rotate: number; fontSize: number };
  * nothing here needs to move for that to remain correct.
  */
 function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> }) {
-  const { activeSectionId } = useSectionFlow();
+  const { activeSectionId, isTransitioning } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
   const [target, setTarget] = useState<Target | null>(null);
 
@@ -103,21 +103,34 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       setTarget({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rotate, fontSize });
     };
 
-    measure();
-    const observer = new ResizeObserver(measure);
-    observer.observe(element);
-    window.addEventListener("resize", measure);
     // getBoundingClientRect is viewport-relative, so the target must be
     // recomputed as the page scrolls — not just when the slot's own size
     // changes. Without this, activating a slot mid-transition (activeIndex
     // updates the instant the 800ms pinned scroll starts, well before it
     // finishes) freezes the target at whatever position the element happened
     // to be at that first instant, rather than where it actually lands.
-    window.addEventListener("scroll", measure, { passive: true });
+    // Coalesced to one measurement per frame — scroll fires far more often
+    // than that, and re-rendering on every tick was what made the label
+    // visibly lag behind the actual scroll.
+    let frame = 0;
+    const scheduleMeasure = () => {
+      if (frame) return;
+      frame = requestAnimationFrame(() => {
+        frame = 0;
+        measure();
+      });
+    };
+
+    measure();
+    const observer = new ResizeObserver(scheduleMeasure);
+    observer.observe(element);
+    window.addEventListener("resize", scheduleMeasure);
+    window.addEventListener("scroll", scheduleMeasure, { passive: true });
     return () => {
       observer.disconnect();
-      window.removeEventListener("resize", measure);
-      window.removeEventListener("scroll", measure);
+      window.removeEventListener("resize", scheduleMeasure);
+      window.removeEventListener("scroll", scheduleMeasure);
+      if (frame) cancelAnimationFrame(frame);
     };
   }, [activeSlot, shouldReduceMotion]);
 
@@ -128,7 +141,15 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-20 will-change-transform"
       animate={{ x: target.x, y: target.y, opacity: activeSlotId ? 1 : 0 }}
-      transition={{ type: "spring", stiffness: 120, damping: 20, mass: 0.7 }}
+      // A spring only for the flight between sections (isTransitioning): once
+      // settled, position updates come from the reader's own scroll (the slot
+      // scrolling within its section), which is already smooth — animating
+      // those too would make the label visibly lag behind real scroll input.
+      transition={
+        isTransitioning
+          ? { type: "spring", stiffness: 120, damping: 20, mass: 0.7 }
+          : { duration: 0 }
+      }
     >
       <div className="-translate-x-1/2 -translate-y-1/2">
         <motion.span
