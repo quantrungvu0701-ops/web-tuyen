@@ -171,10 +171,11 @@ function Timeline() {
                 }}
                 type="button"
                 aria-expanded={isStepActive}
+                // No mouse-leave/blur reset: the mascot stays parked at
+                // whichever step was last hovered/clicked/focused instead of
+                // hopping back to step 1 the instant the pointer moves away.
                 onMouseEnter={() => moveMascotTo(i)}
-                onMouseLeave={() => moveMascotTo(0)}
                 onFocus={() => moveMascotTo(i)}
-                onBlur={() => moveMascotTo(0)}
                 onClick={() => moveMascotTo(i)}
                 className="flex size-11 cursor-pointer items-center justify-center rounded-full border-2 border-accent bg-background font-display text-sm font-semibold text-accent transition-colors duration-200 hover:bg-accent hover:text-accent-foreground"
               >
