@@ -76,6 +76,16 @@ const SCRUB_INPUT_DISTANCE = 600;
 // reversing lands you back exactly where you started, in both directions.
 const SCRUB_FLIP_AT = 0.5;
 const KEY_STEP = 0.32;
+// Fraction of the remaining gap to targetProgress closed per animation
+// frame — converges in ~200ms regardless of how it got there. A mouse
+// wheel delivers one large delta per notch with nothing in between; a
+// trackpad delivers many small deltas that happen to look smooth by
+// accident. Without this, a wheel notch snapped progress (and so every
+// morphed property) straight to its new value in a single frame — visibly
+// a jump-cut, not a morph. This makes both input styles animate the same
+// way: what changed is *when* the target moves, not how display catches up.
+const SCRUB_CATCHUP = 0.3;
+const SCRUB_SETTLE_EPSILON = 0.0015;
 
 function easeInOutCubic(t: number) {
   return t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
@@ -101,7 +111,10 @@ type ScrubState = {
   direction: "down" | "up";
   startY: number;
   targetY: number;
-  progress: number;
+  /** Where raw input wants to be — updated instantly, can jump. */
+  targetProgress: number;
+  /** What's actually applied to scroll/morphs — eases toward targetProgress. */
+  displayProgress: number;
 };
 
 export function SectionFlowProvider({ children }: { children: ReactNode }) {
@@ -120,6 +133,8 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
   const lastScrollYRef = useRef(0);
   const scrubRef = useRef<ScrubState | null>(null);
   const scrubCleanupRef = useRef<(() => void) | null>(null);
+  // requestAnimationFrame id for the display-catches-up-to-target loop.
+  const scrubFrameRef = useRef(0);
   // A React-visible mirror of scrubRef's progress, updated on every advance()
   // — components that morph continuously with the scrub (rather than
   // snapping at activeIndex's flip) read this to interpolate.
@@ -159,6 +174,10 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
   // residual input from immediately re-triggering the next boundary.
   const endScrub = useCallback(
     (finalIndex: number) => {
+      if (scrubFrameRef.current) {
+        cancelAnimationFrame(scrubFrameRef.current);
+        scrubFrameRef.current = 0;
+      }
       scrubCleanupRef.current?.();
       scrubCleanupRef.current = null;
       scrubRef.current = null;
@@ -174,25 +193,67 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
 
   const expectedYRef = useRef(0);
 
-  const applyScrub = useCallback(() => {
+  /** Scrolls to and publishes a specific progress value — display, not target. */
+  const applyScrubAt = useCallback(
+    (scrub: ScrubState, progress: number) => {
+      const y = scrub.startY + (scrub.targetY - scrub.startY) * progress;
+      expectedYRef.current = y;
+      window.scrollTo(0, y);
+      setScrubProgress({ fromIndex: scrub.fromIndex, toIndex: scrub.toIndex, progress });
+
+      const shouldShowTarget = progress >= SCRUB_FLIP_AT;
+      const nextActive = shouldShowTarget ? scrub.toIndex : scrub.fromIndex;
+      if (nextActive !== activeIndexRef.current) setActive(nextActive);
+    },
+    [setActive],
+  );
+
+  // Runs every frame while display is still catching up to target, easing
+  // the gap closed rather than jumping straight to it. Self-terminates once
+  // caught up (or the scrub completes/cancels) rather than looping forever.
+  // Self-recursive via a ref (rather than closing over its own useCallback
+  // binding directly) so eslint's hooks rule doesn't flag it as used before
+  // it's declared — the recursion itself is fine either way since it only
+  // runs on a later frame, never synchronously during definition. The ref is
+  // updated in an effect, not during render, per the rules of hooks.
+  const tickScrubLoopRef = useRef<() => void>(() => {});
+  const tickScrubImpl = useCallback(() => {
     const scrub = scrubRef.current;
-    if (!scrub) return;
+    if (!scrub) {
+      scrubFrameRef.current = 0;
+      return;
+    }
 
-    const y = scrub.startY + (scrub.targetY - scrub.startY) * scrub.progress;
-    expectedYRef.current = y;
-    window.scrollTo(0, y);
-    setScrubProgress({ fromIndex: scrub.fromIndex, toIndex: scrub.toIndex, progress: scrub.progress });
+    const gap = scrub.targetProgress - scrub.displayProgress;
+    scrub.displayProgress =
+      Math.abs(gap) < SCRUB_SETTLE_EPSILON ? scrub.targetProgress : scrub.displayProgress + gap * SCRUB_CATCHUP;
 
-    const shouldShowTarget = scrub.progress >= SCRUB_FLIP_AT;
-    const nextActive = shouldShowTarget ? scrub.toIndex : scrub.fromIndex;
-    if (nextActive !== activeIndexRef.current) setActive(nextActive);
+    applyScrubAt(scrub, scrub.displayProgress);
 
-    if (scrub.progress >= 1) endScrub(scrub.toIndex);
-    else if (scrub.progress <= 0) endScrub(scrub.fromIndex);
-  }, [endScrub, setActive]);
+    if (scrub.displayProgress >= 1) {
+      scrubFrameRef.current = 0;
+      endScrub(scrub.toIndex);
+      return;
+    }
+    if (scrub.displayProgress <= 0 && scrub.targetProgress <= 0) {
+      scrubFrameRef.current = 0;
+      endScrub(scrub.fromIndex);
+      return;
+    }
+
+    scrubFrameRef.current = requestAnimationFrame(() => tickScrubLoopRef.current());
+  }, [applyScrubAt, endScrub]);
+  useEffect(() => {
+    tickScrubLoopRef.current = tickScrubImpl;
+  }, [tickScrubImpl]);
+  const tickScrubLoop = useCallback(() => tickScrubLoopRef.current(), []);
 
   const cancelScrub = useCallback(() => {
     if (!scrubRef.current) return;
+    if (scrubFrameRef.current) {
+      cancelAnimationFrame(scrubFrameRef.current);
+      scrubFrameRef.current = 0;
+    }
     scrubCleanupRef.current?.();
     scrubCleanupRef.current = null;
     scrubRef.current = null;
@@ -224,9 +285,10 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
         direction,
         startY: window.scrollY,
         targetY,
-        progress: 0,
+        targetProgress: 0,
+        displayProgress: 0,
       };
-      // Must be set now, not left to the first applyScrub() call: the drift
+      // Must be set now, not left to the first applyScrubAt() call: the drift
       // watchdog below starts listening immediately, and until this is set
       // it holds whatever stale value was last written — for a scrub deep
       // in the page that's thousands of pixels from the real position,
@@ -249,12 +311,14 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
 
       // Normalized so positive always means "advancing toward the target,"
       // regardless of whether that's physically further down or up the page.
+      // Only moves targetProgress — the actual scroll/morph application is
+      // the catch-up loop's job, started here if it isn't already running.
       const advance = (rawDelta: number) => {
         const scrub = scrubRef.current;
         if (!scrub) return;
         const signed = scrub.direction === "up" ? -rawDelta : rawDelta;
-        scrub.progress = clamp01(scrub.progress + signed / SCRUB_INPUT_DISTANCE);
-        applyScrub();
+        scrub.targetProgress = clamp01(scrub.targetProgress + signed / SCRUB_INPUT_DISTANCE);
+        if (!scrubFrameRef.current) scrubFrameRef.current = requestAnimationFrame(tickScrubLoop);
       };
 
       const onWheel = (event: WheelEvent) => {
@@ -319,7 +383,7 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
         document.documentElement.style.touchAction = previousTouchAction;
       };
     },
-    [applyScrub, endScrub],
+    [endScrub, tickScrubLoop],
   );
 
   /** Animates the window to `targetY` — used only for nav-triggered jumps. */
