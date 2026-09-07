@@ -85,7 +85,7 @@ type Target = { x: number; y: number; rotate: number; fontSize: number };
  * nothing here needs to move for that to remain correct.
  */
 function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> }) {
-  const { activeSectionId, isTransitioning } = useSectionFlow();
+  const { activeSectionId } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
   const [target, setTarget] = useState<Target | null>(null);
 
@@ -141,23 +141,24 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-20 will-change-transform"
       animate={{ x: target.x, y: target.y, opacity: activeSlotId ? 1 : 0 }}
-      // A short tween only while actively pinned (isTransitioning): wheel
-      // input arrives in discrete, fairly coarse ticks, and with no
-      // interpolation at all each tick just snaps the label to its new spot
-      // — technically correct, but reads as "not morphing," not as motion.
-      // 120ms is enough to turn that into a visible glide without being
-      // long enough to feel laggy. Once settled, position updates come from
-      // ordinary scrolling and must stay instant (duration: 0) — a spring
-      // or tween there measurably trails behind the reader's own scroll.
-      transition={
-        isTransitioning ? { duration: 0.12, ease: [0.16, 1, 0.3, 1] } : { duration: 0 }
-      }
+      // Always instant — see below for why this has to include rotate and
+      // fontSize too, not just position.
+      transition={{ duration: 0 }}
     >
       <div className="-translate-x-1/2 -translate-y-1/2">
         <motion.span
           className="block font-display leading-none font-semibold tracking-tight whitespace-nowrap text-accent"
           animate={{ rotate: target.rotate, fontSize: target.fontSize }}
-          transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
+          // Was a fixed 0.6s tween, completely decoupled from position above
+          // (and from isTransitioning). Position is now re-measured and
+          // repositioned every scroll frame; rotation/size sitting on their
+          // own independent multi-hundred-ms clock meant the label was
+          // never actually where its own current rotation/size implied —
+          // positioned for wherever the scroll currently is, but rotated
+          // and sized for wherever it was ~0.3-0.6s ago. Instant keeps every
+          // property tied to the same single source of truth (the current
+          // measurement), so nothing can drift out of sync with the others.
+          transition={{ duration: 0 }}
         >
           {about.label}
         </motion.span>
