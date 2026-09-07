@@ -38,10 +38,20 @@ type Registration = {
   anchor: MascotAnchor;
 };
 
+/**
+ * Continuous progress through the pinned scrub currently in control of the
+ * page, if any — for anything that needs to visibly morph between two
+ * sections' content in step with the reader's own wheel/touch/key input
+ * (About-us label, member photos), rather than snapping the instant
+ * activeSectionId flips at the scrub's halfway mark.
+ */
+export type ScrubProgress = { fromId: string; toId: string; progress: number };
+
 type SectionFlowValue = {
   activeIndex: number;
   activeSectionId: string | null;
   isTransitioning: boolean;
+  scrub: ScrubProgress | null;
   /** Anchor the mascot should currently occupy (override wins over section). */
   mascotAnchor: MascotAnchor;
   registerSection: (registration: Registration) => () => void;
@@ -110,6 +120,12 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
   const lastScrollYRef = useRef(0);
   const scrubRef = useRef<ScrubState | null>(null);
   const scrubCleanupRef = useRef<(() => void) | null>(null);
+  // A React-visible mirror of scrubRef's progress, updated on every advance()
+  // — components that morph continuously with the scrub (rather than
+  // snapping at activeIndex's flip) read this to interpolate.
+  const [scrubProgress, setScrubProgress] = useState<{ fromIndex: number; toIndex: number; progress: number } | null>(
+    null,
+  );
 
   const commitSections = useCallback((next: Registration[]) => {
     sectionsRef.current = next;
@@ -149,6 +165,7 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
       transitioningRef.current = false;
       setActive(finalIndex);
       setIsTransitioning(false);
+      setScrubProgress(null);
       cooldownUntilRef.current = performance.now() + COOLDOWN_MS;
       lastScrollYRef.current = window.scrollY;
     },
@@ -164,6 +181,7 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
     const y = scrub.startY + (scrub.targetY - scrub.startY) * scrub.progress;
     expectedYRef.current = y;
     window.scrollTo(0, y);
+    setScrubProgress({ fromIndex: scrub.fromIndex, toIndex: scrub.toIndex, progress: scrub.progress });
 
     const shouldShowTarget = scrub.progress >= SCRUB_FLIP_AT;
     const nextActive = shouldShowTarget ? scrub.toIndex : scrub.fromIndex;
@@ -180,6 +198,7 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
     scrubRef.current = null;
     transitioningRef.current = false;
     setIsTransitioning(false);
+    setScrubProgress(null);
   }, []);
 
   // Pins the page at the current scroll position and hands control of
@@ -456,16 +475,25 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
       hidden: true,
     };
 
+    const scrub: ScrubProgress | null = scrubProgress
+      ? {
+          fromId: sections.find((s) => s.index === scrubProgress.fromIndex)?.id ?? "",
+          toId: sections.find((s) => s.index === scrubProgress.toIndex)?.id ?? "",
+          progress: scrubProgress.progress,
+        }
+      : null;
+
     return {
       activeIndex,
       activeSectionId: sections.find((s) => s.index === activeIndex)?.id ?? null,
       isTransitioning,
+      scrub,
       mascotAnchor: override ?? sectionAnchor,
       registerSection,
       goToSection,
       setMascotOverride: setOverride,
     };
-  }, [activeIndex, goToSection, isTransitioning, override, registerSection, sections]);
+  }, [activeIndex, goToSection, isTransitioning, override, registerSection, scrubProgress, sections]);
 
   return <SectionFlowContext.Provider value={value}>{children}</SectionFlowContext.Provider>;
 }

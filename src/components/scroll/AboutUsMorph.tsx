@@ -71,47 +71,55 @@ export function AboutUsMorphProvider({ children }: { children: ReactNode }) {
   );
 }
 
-type Target = { x: number; y: number; rotate: number; fontSize: number };
+type Measurement = { x: number; y: number; rotate: number; fontSize: number };
+
+function measureSlot(slot: Slot): Measurement {
+  const rect = slot.element.getBoundingClientRect();
+  const fontSize = parseFloat(getComputedStyle(slot.element).fontSize);
+  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rotate: slot.rotate, fontSize };
+}
+
+function lerp(from: number, to: number, t: number) {
+  return from + (to - from) * t;
+}
 
 /**
  * The single "About us" label that actually renders. It tracks whichever
- * registered slot belongs to the active section, tweening position, rotation
- * and font size between them — the vertical rail in About continuously
- * rotates and slides into the horizontal kicker above Events, rather than
- * one fading out while a second, independent copy fades in elsewhere.
+ * registered slot belongs to the active section, and while a pinned scrub is
+ * actively crossing between About and Events, interpolates continuously
+ * between both slots' measured position/rotation/size using the scrub's own
+ * progress (not a timer) — the vertical rail in About visibly, continuously
+ * rotates and slides into the horizontal kicker above Events in step with
+ * the reader's own wheel/touch input, rather than snapping the instant
+ * activeSectionId flips at the scrub's halfway mark (which reads as an
+ * abrupt cut/fade, not a morph).
  *
  * Under reduced motion this stays hidden: each section renders its own
  * static, always-visible label instead (see About.tsx / Events.tsx), so
  * nothing here needs to move for that to remain correct.
  */
 function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> }) {
-  const { activeSectionId } = useSectionFlow();
+  const { activeSectionId, scrub } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
-  const [target, setTarget] = useState<Target | null>(null);
+  const [measurements, setMeasurements] = useState<Partial<Record<SlotId, Measurement>>>({});
 
-  const activeSlotId: SlotId | null =
-    activeSectionId === "about" || activeSectionId === "events" ? activeSectionId : null;
-  const activeSlot = activeSlotId ? slots[activeSlotId] : undefined;
+  const aboutSlot = slots.about;
+  const eventsSlot = slots.events;
 
+  // Both slots are measured continuously (not just whichever is "active"):
+  // a scrub between them needs both endpoints available every frame to
+  // interpolate, and getBoundingClientRect is viewport-relative so this has
+  // to track scroll regardless of which slot ends up being shown.
   useEffect(() => {
-    if (shouldReduceMotion || !activeSlot) return;
-    const { element, rotate } = activeSlot;
+    if (shouldReduceMotion) return;
 
     const measure = () => {
-      const rect = element.getBoundingClientRect();
-      const fontSize = parseFloat(getComputedStyle(element).fontSize);
-      setTarget({ x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rotate, fontSize });
+      setMeasurements({
+        about: aboutSlot ? measureSlot(aboutSlot) : undefined,
+        events: eventsSlot ? measureSlot(eventsSlot) : undefined,
+      });
     };
 
-    // getBoundingClientRect is viewport-relative, so the target must be
-    // recomputed as the page scrolls — not just when the slot's own size
-    // changes. Without this, activating a slot mid-transition (activeIndex
-    // updates the instant the 800ms pinned scroll starts, well before it
-    // finishes) freezes the target at whatever position the element happened
-    // to be at that first instant, rather than where it actually lands.
-    // Coalesced to one measurement per frame — scroll fires far more often
-    // than that, and re-rendering on every tick was what made the label
-    // visibly lag behind the actual scroll.
     let frame = 0;
     const scheduleMeasure = () => {
       if (frame) return;
@@ -123,7 +131,8 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
 
     measure();
     const observer = new ResizeObserver(scheduleMeasure);
-    observer.observe(element);
+    if (aboutSlot) observer.observe(aboutSlot.element);
+    if (eventsSlot) observer.observe(eventsSlot.element);
     window.addEventListener("resize", scheduleMeasure);
     window.addEventListener("scroll", scheduleMeasure, { passive: true });
     return () => {
@@ -132,32 +141,55 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       window.removeEventListener("scroll", scheduleMeasure);
       if (frame) cancelAnimationFrame(frame);
     };
-  }, [activeSlot, shouldReduceMotion]);
+  }, [aboutSlot, eventsSlot, shouldReduceMotion]);
 
-  if (shouldReduceMotion || !target) return null;
+  if (shouldReduceMotion) return null;
+
+  // Scrubbing directly between About and Events (either direction): morph
+  // continuously between both measured endpoints, driven by the scrub's own
+  // progress rather than activeSectionId's discrete flip.
+  const isAboutEventsScrub =
+    scrub && ((scrub.fromId === "about" && scrub.toId === "events") ||
+      (scrub.fromId === "events" && scrub.toId === "about"));
+
+  let target: Measurement | null = null;
+  let visible = false;
+
+  if (isAboutEventsScrub && measurements.about && measurements.events) {
+    const t = scrub!.fromId === "about" ? scrub!.progress : 1 - scrub!.progress;
+    const from = measurements.about;
+    const to = measurements.events;
+    target = {
+      x: lerp(from.x, to.x, t),
+      y: lerp(from.y, to.y, t),
+      rotate: lerp(from.rotate, to.rotate, t),
+      fontSize: lerp(from.fontSize, to.fontSize, t),
+    };
+    visible = true;
+  } else {
+    const activeSlotId: SlotId | null =
+      activeSectionId === "about" || activeSectionId === "events" ? activeSectionId : null;
+    target = activeSlotId ? (measurements[activeSlotId] ?? null) : null;
+    visible = Boolean(activeSlotId && target);
+  }
+
+  if (!target) return null;
 
   return (
     <motion.div
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-20 will-change-transform"
-      animate={{ x: target.x, y: target.y, opacity: activeSlotId ? 1 : 0 }}
-      // Always instant — see below for why this has to include rotate and
-      // fontSize too, not just position.
+      animate={{ x: target.x, y: target.y, opacity: visible ? 1 : 0 }}
+      // Always instant: every property is driven by a live measurement (or,
+      // mid-scrub, a direct interpolation of the scrub's own progress) —
+      // there is nothing left for a separate animation timeline to smooth,
+      // and adding one would just reintroduce a lag behind the source signal.
       transition={{ duration: 0 }}
     >
       <div className="-translate-x-1/2 -translate-y-1/2">
         <motion.span
           className="block font-display leading-none font-semibold tracking-tight whitespace-nowrap text-accent"
           animate={{ rotate: target.rotate, fontSize: target.fontSize }}
-          // Was a fixed 0.6s tween, completely decoupled from position above
-          // (and from isTransitioning). Position is now re-measured and
-          // repositioned every scroll frame; rotation/size sitting on their
-          // own independent multi-hundred-ms clock meant the label was
-          // never actually where its own current rotation/size implied —
-          // positioned for wherever the scroll currently is, but rotated
-          // and sized for wherever it was ~0.3-0.6s ago. Instant keeps every
-          // property tied to the same single source of truth (the current
-          // measurement), so nothing can drift out of sync with the others.
           transition={{ duration: 0 }}
         >
           {about.label}
