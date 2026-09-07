@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { useMemberMorphSlot } from "@/components/scroll/MemberMorph";
+import { AmbientGlow } from "@/components/ui/AmbientGlow";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { bottomRowMembers, topRowMembers, type Member } from "@/lib/site-config";
 import { reveal } from "@/lib/motion";
@@ -14,8 +15,9 @@ export function BigFatFamily({ index }: { index: number }) {
       id="bo-7"
       index={index}
       anchor={{ x: 92, y: 88, scale: 0.7 }}
-      className="flex min-h-dvh flex-col items-center justify-center gap-10 py-16 md:gap-14 md:py-24"
+      className="flex min-h-dvh flex-col items-center justify-center gap-10 overflow-hidden py-16 md:gap-14 md:py-24"
     >
+      <AmbientGlow variant="bottom-left" />
       <FamilyContent />
     </FlowSection>
   );

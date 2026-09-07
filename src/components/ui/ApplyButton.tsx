@@ -19,7 +19,7 @@ export function ApplyButton({ className = "", size = "lg", label = "Đăng ký n
       href={siteConfig.googleFormUrl}
       target="_blank"
       rel="noopener noreferrer"
-      className={`group inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-accent font-semibold text-accent-foreground shadow-[0_6px_20px_rgba(166,25,46,0.25)] transition-colors duration-200 hover:bg-accent-hover ${padding} ${className}`}
+      className={`group inline-flex min-h-[44px] items-center justify-center gap-2 rounded-full bg-accent font-semibold text-accent-foreground shadow-[0_6px_20px_rgba(166,25,46,0.25)] transition-[background-color,transform,box-shadow] duration-200 hover:bg-accent-hover active:scale-[0.97] active:shadow-[0_3px_12px_rgba(166,25,46,0.25)] ${padding} ${className}`}
     >
       {label}
       <ArrowUpRight

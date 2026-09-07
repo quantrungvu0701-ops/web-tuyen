@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { useAboutUsSlot } from "@/components/scroll/AboutUsMorph";
+import { AmbientGlow } from "@/components/ui/AmbientGlow";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { about } from "@/lib/site-config";
 import { reveal } from "@/lib/motion";
@@ -48,8 +49,9 @@ export function About({ index }: { index: number }) {
       id="about"
       index={index}
       anchor={{ x: 88, y: 78, scale: 1 }}
-      className="flex min-h-dvh items-center py-16 md:py-24"
+      className="flex min-h-dvh items-center overflow-hidden py-16 md:py-24"
     >
+      <AmbientGlow variant="top-right" />
       <AboutContent />
     </FlowSection>
   );

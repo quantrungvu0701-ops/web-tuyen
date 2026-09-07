@@ -31,7 +31,7 @@ export function SmartImage({ src, alt, placeholderLabel, className = "" }: Smart
   if (failed) {
     return (
       <div
-        className={`flex flex-col items-center justify-center gap-2 bg-muted text-muted-foreground ${className}`}
+        className={`placeholder-hatch flex flex-col items-center justify-center gap-2 bg-muted text-muted-foreground ${className}`}
         role="img"
         aria-label={alt}
       >

@@ -5,7 +5,9 @@
   --background: #faf7f2;
   --foreground: #241f1c;
 
-  --card: #ffffff;
+  /* Warm-tinted, not pure #fff — a stark white patch on the cream body reads
+     as a copy-paste seam rather than a surface in the same palette. */
+  --card: #fffdf9;
   --card-foreground: #241f1c;
 
   /* Accent — HSV/FTU red. TODO: swap this single value for the confirmed
@@ -102,4 +104,28 @@ body {
 ::selection {
   background: var(--accent);
   color: var(--accent-foreground);
+}
+
+/* A themed focus ring, not the browser default blue outline — applied to
+   every interactive element site-wide. Keyboard-only (:focus-visible), so
+   mouse/touch interaction stays clean. */
+a:focus-visible,
+button:focus-visible,
+[tabindex]:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+  border-radius: 4px;
+}
+
+/* The diagonal hatch used by SmartImage's pending-asset placeholder — a
+   flat muted rectangle reads as an empty box; a faint pattern reads as a
+   deliberately-designed "content coming soon" state. */
+.placeholder-hatch {
+  background-image: repeating-linear-gradient(
+    -45deg,
+    color-mix(in srgb, var(--border) 70%, transparent) 0,
+    color-mix(in srgb, var(--border) 70%, transparent) 1px,
+    transparent 1px,
+    transparent 12px
+  );
 }

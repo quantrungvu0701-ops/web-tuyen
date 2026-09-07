@@ -4,6 +4,7 @@ import { useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
 import { FlowSection, useSectionActive } from "@/components/scroll/FlowSection";
 import { useMemberMorphSlot } from "@/components/scroll/MemberMorph";
+import { AmbientGlow } from "@/components/ui/AmbientGlow";
 import { SmartImage } from "@/components/ui/SmartImage";
 import { bottomRowMembers, departments, type Department } from "@/lib/site-config";
 import { reveal } from "@/lib/motion";
@@ -14,8 +15,9 @@ export function Departments({ index }: { index: number }) {
       id="ba-ban"
       index={index}
       anchor={{ x: 8, y: 84, scale: 0.85 }}
-      className="flex min-h-dvh flex-col items-center justify-center py-16 md:py-24"
+      className="flex min-h-dvh flex-col items-center justify-center overflow-hidden py-16 md:py-24"
     >
+      <AmbientGlow variant="top-right" />
       <ul className="mx-auto grid w-full max-w-6xl grid-cols-1 gap-8 px-5 sm:grid-cols-3 sm:gap-6 sm:px-6 lg:px-8">
         {departments.map((department, i) => (
           <DepartmentCard key={department.memberId} department={department} delay={i * 0.1} />
