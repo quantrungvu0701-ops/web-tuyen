@@ -16,11 +16,13 @@ type FlowSectionProps = {
   anchor: MascotAnchor;
   className?: string;
   children: ReactNode;
+  /** See `Registration.triggerAt` in SectionFlow. */
+  triggerAt?: number;
 };
 
-export function FlowSection({ id, index, anchor, className = "", children }: FlowSectionProps) {
+export function FlowSection({ id, index, anchor, className = "", children, triggerAt }: FlowSectionProps) {
   const [element, setElement] = useState<HTMLElement | null>(null);
-  const isActive = useRegisterSection(id, index, anchor, element);
+  const isActive = useRegisterSection(id, index, anchor, element, triggerAt);
 
   return (
     <section

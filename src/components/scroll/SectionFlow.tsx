@@ -36,6 +36,16 @@ type Registration = {
   index: number;
   element: HTMLElement;
   anchor: MascotAnchor;
+  /**
+   * Fraction of viewport height (0-1) this section's own bottom (scrolling
+   * down) or top (scrolling up) must cross before the pinned scrub out of it
+   * engages. Defaults to 0.5 (viewport middle). A section whose visually
+   * interesting content — a label about to morph, say — sits well above
+   * that section's own vertical center needs a larger fraction so the pin
+   * engages while that content is still near the top of the screen, instead
+   * of only after it has already scrolled out of view.
+   */
+  triggerAt?: number;
 };
 
 /**
@@ -486,12 +496,12 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
       const direction = scrollY >= lastScrollYRef.current ? "down" : "up";
       lastScrollYRef.current = scrollY;
 
-      const middle = window.innerHeight / 2;
+      const threshold = window.innerHeight * (current.triggerAt ?? 0.5);
       const rect = current.element.getBoundingClientRect();
 
-      if (direction === "down" && rect.bottom <= middle && activeIndexRef.current < sections.length - 1) {
+      if (direction === "down" && rect.bottom <= threshold && activeIndexRef.current < sections.length - 1) {
         beginScrub(activeIndexRef.current + 1, "down");
-      } else if (direction === "up" && rect.top >= middle && activeIndexRef.current > 0) {
+      } else if (direction === "up" && rect.top >= threshold && activeIndexRef.current > 0) {
         beginScrub(activeIndexRef.current - 1, "up");
       }
     };
@@ -579,14 +589,21 @@ export function useRegisterSection(
   index: number,
   anchor: MascotAnchor,
   element: HTMLElement | null,
+  triggerAt?: number,
 ) {
   const { registerSection, activeIndex } = useSectionFlow();
   const anchorKey = JSON.stringify(anchor);
 
   useEffect(() => {
     if (!element) return;
-    return registerSection({ id, index, element, anchor: JSON.parse(anchorKey) as MascotAnchor });
-  }, [anchorKey, element, id, index, registerSection]);
+    return registerSection({
+      id,
+      index,
+      element,
+      anchor: JSON.parse(anchorKey) as MascotAnchor,
+      triggerAt,
+    });
+  }, [anchorKey, element, id, index, registerSection, triggerAt]);
 
   return activeIndex === index;
 }

@@ -71,17 +71,34 @@ export function AboutUsMorphProvider({ children }: { children: ReactNode }) {
   );
 }
 
-type Measurement = { x: number; y: number; rotate: number; fontSize: number };
+type Measurement = { x: number; y: number; top: number; rotate: number; fontSize: number };
 
 function measureSlot(slot: Slot): Measurement {
   const rect = slot.element.getBoundingClientRect();
   const fontSize = parseFloat(getComputedStyle(slot.element).fontSize);
-  return { x: rect.left + rect.width / 2, y: rect.top + rect.height / 2, rotate: slot.rotate, fontSize };
+  return {
+    x: rect.left + rect.width / 2,
+    y: rect.top + rect.height / 2,
+    top: rect.top,
+    rotate: slot.rotate,
+    fontSize,
+  };
 }
 
 function lerp(from: number, to: number, t: number) {
   return from + (to - from) * t;
 }
+
+function clamp01(value: number) {
+  return Math.min(1, Math.max(0, value));
+}
+
+// How much further (as a fraction of viewport height) the "About us" rail's
+// top has to travel past the viewport's own top edge before the morph is
+// fully complete. Kept well inside one viewport so the whole transformation
+// plays out somewhere the reader can actually watch it, instead of starting
+// once the rail is already almost gone and finishing even further above.
+const MORPH_TRAVEL_FRACTION = 0.45;
 
 /**
  * The single "About us" label that actually renders. It tracks whichever
@@ -156,12 +173,22 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
   let visible = false;
 
   if (isAboutEventsScrub && measurements.about && measurements.events) {
-    const t = scrub!.fromId === "about" ? scrub!.progress : 1 - scrub!.progress;
+    // Driven by the rail's own live on-screen position rather than the
+    // scrub's raw wheel-accumulated progress: scrub.progress reflects
+    // arbitrary input distance, not where the rail actually is, so using it
+    // directly could start the morph after the rail's top has already
+    // scrolled past the viewport's top edge (invisible) and finish it even
+    // further above. Anchoring to the measured top keeps the visible morph
+    // window pinned to "top edge -> a bit further up", regardless of how
+    // much wheel/touch input it took to get there.
+    const span = window.innerHeight * MORPH_TRAVEL_FRACTION;
+    const t = clamp01(-measurements.about.top / span);
     const from = measurements.about;
     const to = measurements.events;
     target = {
       x: lerp(from.x, to.x, t),
       y: lerp(from.y, to.y, t),
+      top: lerp(from.top, to.top, t),
       rotate: lerp(from.rotate, to.rotate, t),
       fontSize: lerp(from.fontSize, to.fontSize, t),
     };

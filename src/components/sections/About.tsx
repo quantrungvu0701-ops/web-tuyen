@@ -50,6 +50,14 @@ export function About({ index }: { index: number }) {
       index={index}
       anchor={{ x: 88, y: 78, scale: 1 }}
       className="flex min-h-dvh items-center overflow-hidden py-16 md:py-24"
+      // The "About us" rail sits well above this section's own vertical
+      // center, so the generic 50%-of-viewport trigger only engages the
+      // pinned scrub into Events once the rail has already scrolled off the
+      // top — by which point its morph into the Events kicker has nowhere
+      // visible left to play out. 0.7 was measured directly against this
+      // section's own settled layout: it's the fraction at which the rail's
+      // top is exactly at the viewport's own top edge.
+      triggerAt={0.7}
     >
       <AmbientGlow variant="top-right" />
       <AboutContent />
