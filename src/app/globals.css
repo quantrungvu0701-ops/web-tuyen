@@ -1,13 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  /* Warm off-white / charcoal base — never pure white or pure black. */
-  --background: #faf7f2;
+  /* Pastel pink base, matching last year's site (peach-to-blush gradient,
+     cream cards) rather than the neutral cream this year started on. */
+  --background: #fdedf0;
+  --background-top: #fff3ea;
+  --background-bottom: #fbdfe6;
   --foreground: #241f1c;
 
-  /* Warm-tinted, not pure #fff — a stark white patch on the cream body reads
-     as a copy-paste seam rather than a surface in the same palette. */
-  --card: #fffdf9;
+  /* Warm, pink-tinted — not pure #fff, so cards read as one surface in the
+     same palette rather than a copy-paste seam on the pink body. */
+  --card: #fff8f5;
   --card-foreground: #241f1c;
 
   /* Accent — HSV/FTU red. TODO: swap this single value for the confirmed
@@ -18,10 +21,10 @@
   --accent-foreground: #ffffff;
   --accent-tint: #fbeaec;
 
-  --muted: #f1ece3;
-  --muted-foreground: #6b6058;
+  --muted: #f8e3e2;
+  --muted-foreground: #7a5f5c;
 
-  --border: #e6ded2;
+  --border: #f0d3d6;
   --ring: #a6192e;
 }
 
@@ -54,8 +57,20 @@
   }
 }
 
+/* Peach-to-blush vertical gradient plus a faint polka-dot texture — the two
+   decorative signatures of last year's site, kept subtle enough (a couple
+   percent opacity) to sit behind content as atmosphere, not compete with it.
+   Fixed attachment so the gradient reads as one continuous backdrop behind
+   the whole page rather than resetting per section as the reader scrolls. */
 body {
-  background: var(--background);
+  background-color: var(--background);
+  background-image:
+    radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent) 1.5px, transparent 1.5px),
+    linear-gradient(180deg, var(--background-top) 0%, var(--background) 45%, var(--background-bottom) 100%);
+  background-size:
+    26px 26px,
+    100% 100%;
+  background-attachment: fixed, fixed;
   color: var(--foreground);
 }
 
