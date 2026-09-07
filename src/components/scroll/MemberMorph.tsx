@@ -96,7 +96,7 @@ function FloatingMemberImage({
   alt: string;
   slots: SlotMap;
 }) {
-  const { activeSectionId, isTransitioning } = useSectionFlow();
+  const { activeSectionId } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
   const [target, setTarget] = useState<Target | null>(null);
 
@@ -154,15 +154,11 @@ function FloatingMemberImage({
         borderRadius: target.borderRadius,
         opacity: activeKey ? 1 : 0,
       }}
-      // A spring only for the flight between sections (isTransitioning): once
-      // settled, position/size updates come from the reader's own scroll,
-      // which is already smooth — animating those too would make the photo
-      // visibly lag behind real scroll input.
-      transition={
-        isTransitioning
-          ? { type: "spring", stiffness: 120, damping: 20, mass: 0.8 }
-          : { duration: 0 }
-      }
+      // Position/size always snap instantly: the section-to-section flight
+      // is now a pinned scrub, so this is being re-measured on every scroll
+      // frame the whole time regardless — animating it on top would just
+      // make it visibly lag behind the reader's own scroll/wheel input.
+      transition={{ duration: 0 }}
     >
       <SmartImage src={imageSrc} alt={alt} placeholderLabel={`[TODO] ${alt}`} className="h-full w-full" />
     </motion.div>

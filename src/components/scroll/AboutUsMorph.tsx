@@ -85,7 +85,7 @@ type Target = { x: number; y: number; rotate: number; fontSize: number };
  * nothing here needs to move for that to remain correct.
  */
 function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> }) {
-  const { activeSectionId, isTransitioning } = useSectionFlow();
+  const { activeSectionId } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
   const [target, setTarget] = useState<Target | null>(null);
 
@@ -141,15 +141,11 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-20 will-change-transform"
       animate={{ x: target.x, y: target.y, opacity: activeSlotId ? 1 : 0 }}
-      // A spring only for the flight between sections (isTransitioning): once
-      // settled, position updates come from the reader's own scroll (the slot
-      // scrolling within its section), which is already smooth — animating
-      // those too would make the label visibly lag behind real scroll input.
-      transition={
-        isTransitioning
-          ? { type: "spring", stiffness: 120, damping: 20, mass: 0.7 }
-          : { duration: 0 }
-      }
+      // Position always snaps instantly: the section-to-section flight is
+      // now a pinned scrub, so this is being re-measured on every scroll
+      // frame the whole time regardless — animating it on top would just
+      // make it visibly lag behind the reader's own scroll/wheel input.
+      transition={{ duration: 0 }}
     >
       <div className="-translate-x-1/2 -translate-y-1/2">
         <motion.span
