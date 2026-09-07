@@ -85,7 +85,7 @@ type Target = { x: number; y: number; rotate: number; fontSize: number };
  * nothing here needs to move for that to remain correct.
  */
 function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> }) {
-  const { activeSectionId } = useSectionFlow();
+  const { activeSectionId, isTransitioning } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
   const [target, setTarget] = useState<Target | null>(null);
 
@@ -141,11 +141,17 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-20 will-change-transform"
       animate={{ x: target.x, y: target.y, opacity: activeSlotId ? 1 : 0 }}
-      // Position always snaps instantly: the section-to-section flight is
-      // now a pinned scrub, so this is being re-measured on every scroll
-      // frame the whole time regardless — animating it on top would just
-      // make it visibly lag behind the reader's own scroll/wheel input.
-      transition={{ duration: 0 }}
+      // A short tween only while actively pinned (isTransitioning): wheel
+      // input arrives in discrete, fairly coarse ticks, and with no
+      // interpolation at all each tick just snaps the label to its new spot
+      // — technically correct, but reads as "not morphing," not as motion.
+      // 120ms is enough to turn that into a visible glide without being
+      // long enough to feel laggy. Once settled, position updates come from
+      // ordinary scrolling and must stay instant (duration: 0) — a spring
+      // or tween there measurably trails behind the reader's own scroll.
+      transition={
+        isTransitioning ? { duration: 0.12, ease: [0.16, 1, 0.3, 1] } : { duration: 0 }
+      }
     >
       <div className="-translate-x-1/2 -translate-y-1/2">
         <motion.span

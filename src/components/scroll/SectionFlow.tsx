@@ -207,6 +207,13 @@ export function SectionFlowProvider({ children }: { children: ReactNode }) {
         targetY,
         progress: 0,
       };
+      // Must be set now, not left to the first applyScrub() call: the drift
+      // watchdog below starts listening immediately, and until this is set
+      // it holds whatever stale value was last written — for a scrub deep
+      // in the page that's thousands of pixels from the real position,
+      // reading as a false-positive "native scroll broke free" and
+      // cancelling the scrub before a single input event has even arrived.
+      expectedYRef.current = window.scrollY;
       transitioningRef.current = true;
       setIsTransitioning(true);
       setOverride(null);

@@ -96,7 +96,7 @@ function FloatingMemberImage({
   alt: string;
   slots: SlotMap;
 }) {
-  const { activeSectionId } = useSectionFlow();
+  const { activeSectionId, isTransitioning } = useSectionFlow();
   const shouldReduceMotion = useReducedMotion();
   const [target, setTarget] = useState<Target | null>(null);
 
@@ -154,11 +154,14 @@ function FloatingMemberImage({
         borderRadius: target.borderRadius,
         opacity: activeKey ? 1 : 0,
       }}
-      // Position/size always snap instantly: the section-to-section flight
-      // is now a pinned scrub, so this is being re-measured on every scroll
-      // frame the whole time regardless — animating it on top would just
-      // make it visibly lag behind the reader's own scroll/wheel input.
-      transition={{ duration: 0 }}
+      // A short tween only while actively pinned (isTransitioning) — see
+      // AboutUsMorph for why: coarse wheel ticks with zero interpolation
+      // just snap between spots instead of visibly morphing. Once settled,
+      // position/size come from ordinary scrolling and must stay instant —
+      // a tween there measurably trails behind the reader's own scroll.
+      transition={
+        isTransitioning ? { duration: 0.12, ease: [0.16, 1, 0.3, 1] } : { duration: 0 }
+      }
     >
       <SmartImage src={imageSrc} alt={alt} placeholderLabel={`[TODO] ${alt}`} className="h-full w-full" />
     </motion.div>
