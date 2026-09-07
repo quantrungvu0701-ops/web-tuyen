@@ -207,17 +207,18 @@ function FloatingAboutUsLabel({ slots }: { slots: Partial<Record<SlotId, Slot>> 
       aria-hidden="true"
       className="pointer-events-none fixed top-0 left-0 z-20 will-change-transform"
       animate={{ x: target.x, y: target.y, opacity: visible ? 1 : 0 }}
-      // Always instant: every property is driven by a live measurement (or,
-      // mid-scrub, a direct interpolation of the scrub's own progress) —
-      // there is nothing left for a separate animation timeline to smooth,
-      // and adding one would just reintroduce a lag behind the source signal.
-      transition={{ duration: 0 }}
+      // Short eased tween rather than an instant snap: the source signal
+      // (measured position) already updates every frame during a scrub, but
+      // applying each update instantly still reads as a stepped teleport
+      // between measurements rather than a continuous morph — a brief tween
+      // blends consecutive updates into one smooth motion instead.
+      transition={{ duration: 0.18, ease: "easeOut" }}
     >
       <div className="-translate-x-1/2 -translate-y-1/2">
         <motion.span
           className="block font-display leading-none font-semibold tracking-tight whitespace-nowrap text-accent"
           animate={{ rotate: target.rotate, fontSize: target.fontSize }}
-          transition={{ duration: 0 }}
+          transition={{ duration: 0.18, ease: "easeOut" }}
         >
           {about.label}
         </motion.span>
