@@ -44,3 +44,8 @@ yarn-error.log*
 next-env.d.ts
 # Playwright CLI output (may contain credentials)
 .playwright-cli/
+
+# Agent tooling — restorable via skills-lock.json (`npx skills add`), ~17MB of
+# downloaded binaries that don't belong in the site repo.
+.claude/skills/
+.agents/
