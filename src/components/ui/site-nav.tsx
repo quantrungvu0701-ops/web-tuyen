@@ -1,69 +1,109 @@
+"use client";
+
+import type { MouseEvent } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { ScrollSmoother } from "gsap/ScrollSmoother";
+import {
+  MorphingScrollNavbar,
+  type MorphingScrollNavbarTheme,
+  type ScrollNavLink,
+} from "@/components/ui/morphing-scroll-navbar";
+
+/**
+ * Enough to clear the nav's own resting height (68px, see page.tsx) plus a
+ * little air, so the section's own heading doesn't land tucked under it.
+ */
+const SCROLL_CLEARANCE_PX = 84;
+
+/**
+ * Sections whose ScrollTrigger pins at `start: "top top"`. Landing these with
+ * the usual clearance drops you 84px SHORT of the pin, in the sliver before it
+ * engages — where the stage is still in normal flow, sits 84px low, and has
+ * its bottom (the gallery's dots bar) hanging under the fold. They reserve
+ * their own nav clearance internally, so they want the section flush to the
+ * top and the pin holding it there.
+ */
+const PINNED_SECTIONS = new Set(["#su-kien"]);
+
+/**
+ * Section links animate to their target with GSAP instead of the browser's
+ * instant hash jump — everything on this page (bar "đơn") lives on the one
+ * route, so a link never needs to leave it, only glide there.
+ *
+ * Routes to ScrollSmoother's own `scrollTo` where the request says to: the
+ * smoother scrolls by transforming its content rather than the document, so
+ * an ordinary `window.scrollTo` or `scrollIntoView` moves the real scrollbar
+ * out from under the content it eases toward — the smoother's own method is
+ * built to keep the two in sync. Falls back to a native smooth scroll if the
+ * smoother never mounted (prefers-reduced-motion turns it off entirely; see
+ * SmoothScroll.tsx), so the link still works either way.
+ */
+function scrollToSection(href: string, event: MouseEvent<HTMLAnchorElement>) {
+  if (!href.startsWith("#")) return; // real pages ("/don") navigate as normal
+
+  const target = document.querySelector(href);
+  if (!target) return;
+  event.preventDefault();
+
+  const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+  const smoother = ScrollSmoother.get();
+
+  if (reduced || !smoother) {
+    target.scrollIntoView({ behavior: reduced ? "auto" : "smooth", block: "start" });
+    return;
+  }
+
+  const clearance = PINNED_SECTIONS.has(href) ? 0 : SCROLL_CLEARANCE_PX;
+  smoother.scrollTo(target, true, `top ${clearance}px`);
+}
 
 // Sampled from the BFF logo.
 const BRAND_RED = "#E80808";
-// Sampled from the top row of hero-background.webp, so the band reads as one
-// surface with the artwork below it.
-const BAND = "#FEE9BA";
+// Near-white, not the cream from the hero: the floating shell is frosted glass,
+// and a saturated tint reads as a solid slab at any alpha instead of letting
+// the section behind it show through.
+const BAND = "#FFFCF5";
 
-const GLASS = {
-  backgroundColor: "rgba(255, 252, 245, 0.65)",
-  borderColor: "rgba(255, 255, 255, 0.55)",
-};
-
-type NavLink = {
-  label: string;
-  href: string;
-};
-
-// "#" targets jump to a section on the home page; the rest are their own pages.
-const LINKS: NavLink[] = [
-  { label: "SKBL", href: "/skbl" },
-  { label: "ABOUT", href: "#about" },
-  { label: "TUYỂN", href: "#tuyen" },
-  { label: "GALLERY", href: "/gallery" },
+// Module constants, not inline literals: the navbar keys its scroll listener
+// off `links`, so a fresh array on every render would tear that listener down
+// and rebuild it continuously while scrolling.
+const LINKS: ScrollNavLink[] = [
+  { label: "Giới thiệu", href: "#about" },
+  { label: "Các sự kiện chính", href: "#su-kien" },
+  { label: "Tuyển cộng tác viên", href: "#tuyen" },
 ];
+
+const THEME: MorphingScrollNavbarTheme = {
+  accent: BRAND_RED,
+  accentSoft: "#FF7A45",
+  paper: BAND,
+  surface: "#FFFCF5",
+  ink: "#241F1C",
+  muted: "#6B5A44",
+  line: "rgba(36, 31, 28, 0.14)",
+};
 
 export default function SiteNav() {
   return (
-    <header className="w-full px-4 py-4" style={{ backgroundColor: BAND }}>
-      <nav
-        className="mx-auto flex max-w-6xl items-center justify-between gap-6 rounded-full border px-4 py-2 shadow-[0_6px_24px_rgba(120,90,40,0.12)] backdrop-blur-xl"
-        style={GLASS}
-      >
-        <Link href="/" aria-label="HSV FTU — về trang chủ" className="shrink-0">
-          <Image
-            src="/logo-bff.png"
-            alt="BFF — Hội Sinh viên trường ĐH Ngoại thương"
-            width={1902}
-            height={827}
-            priority={false}
-            className="h-9 w-auto"
-          />
-        </Link>
-
-        <ul className="flex items-center gap-1 sm:gap-2">
-          {LINKS.map((link) => (
-            <li key={link.label}>
-              <Link
-                href={link.href}
-                className="rounded-full px-3 py-2 text-sm font-semibold tracking-wide text-[#241F1C] transition-colors hover:bg-black/5 sm:px-4"
-              >
-                {link.label}
-              </Link>
-            </li>
-          ))}
-        </ul>
-
-        <Link
-          href="/don"
-          className="shrink-0 rounded-full px-5 py-2.5 text-sm font-bold tracking-wide text-white transition-opacity hover:opacity-90"
-          style={{ backgroundColor: BRAND_RED }}
-        >
+    <MorphingScrollNavbar
+      brandHref="/"
+      theme={THEME}
+      links={LINKS}
+      onLinkClick={scrollToSection}
+      brand={
+        <Image
+          src="/logo-bff.png"
+          alt="BFF — Hội Sinh viên trường ĐH Ngoại thương"
+          width={1902}
+          height={827}
+          className="h-9 w-auto"
+        />
+      }
+      actions={
+        <a className="msn-button msn-cta" href="/don">
           ĐIỀN ĐƠN NGAY
-        </Link>
-      </nav>
-    </header>
+        </a>
+      }
+    />
   );
 }

@@ -3,14 +3,14 @@
 import React, { useEffect, useRef, useState } from "react";
 
 /* -------------------------------------------------------------- design tokens
- * TODO(pink): exact pastel pink for the section background. Placeholder value —
- * confirm against the rest of the palette.
+ * sectionBg matches "Giới thiệu"/"Các sự kiện chính" (site-wide unification,
+ * user confirmed) — was a pink shared deliberately with the timeline above.
  * TODO(beam): beam colour + opacity. These need a contrast check against the
- * pink once the real copy is in: a pale beam over pale pink can wash out, and
- * the yellow beam is the riskiest of the three.
+ * new cream once the real copy is in: the yellow beam is the riskiest of
+ * the three.
  */
 const TOKENS = {
-  sectionBg: "#FCE4EC",
+  sectionBg: "#FEF6E6",
   housingBg: "#2A2A2E",
   housingBorder: "#17171A",
   bulbOff: "#3A3A40",

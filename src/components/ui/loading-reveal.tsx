@@ -24,7 +24,11 @@ export default function LoadingReveal({
 
   return (
     <motion.div
-      className="fixed inset-0 z-50 flex items-center justify-center"
+      // Above the nav's own z-100/101 (morphing-scroll-navbar.tsx), which is
+      // also `position: fixed`. At z-50 it painted UNDER the nav, so the logo
+      // and CTA showed through the whole hold instead of appearing only once
+      // the screen slides away.
+      className="fixed inset-0 z-[200] flex items-center justify-center"
       style={{ backgroundColor }}
       initial={{ y: 0 }}
       animate={{ y: revealed ? "-100%" : 0 }}

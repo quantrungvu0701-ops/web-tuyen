@@ -1,11 +1,13 @@
 @import "tailwindcss";
 
 :root {
-  /* Pastel pink base, matching last year's site (peach-to-blush gradient,
-     cream cards) rather than the neutral cream this year started on. */
-  --background: #fdedf0;
-  --background-top: #fff3ea;
-  --background-bottom: #fbdfe6;
+  /* Flat, matching the "Giới thiệu" section (about-hsv.tsx) exactly, so the
+     one backdrop that shows through any gap between sections reads as the
+     same surface as the page's own content rather than a leftover peach-pink
+     gradient from last year's site. */
+  --background: #fef6e6;
+  --background-top: #fef6e6;
+  --background-bottom: #fef6e6;
   --foreground: #241f1c;
 
   /* Warm, pink-tinted — not pure #fff, so cards read as one surface in the
