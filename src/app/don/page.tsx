@@ -4,7 +4,7 @@ import ApplicationForm from "@/components/ui/application-form";
 export const metadata: Metadata = {
   title: "Đơn ứng tuyển Cộng tác viên | HSV FTU",
   description:
-    "Đơn ứng tuyển Cộng tác viên Hội Sinh viên trường Đại học Ngoại thương — thế hệ thứ 23.",
+    "Đơn ứng tuyển Cộng tác viên Hội Sinh viên trường Đại học Ngoại thương — thế hệ thứ 24.",
 };
 
 /**

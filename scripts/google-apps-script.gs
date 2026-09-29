@@ -24,7 +24,7 @@
 var SHEET_NAME = 'Đơn ứng tuyển';
 
 /** Nobody may apply after this. Keep it in step with src/lib/deadline.ts. */
-var DEADLINE = new Date('2026-10-15T23:59:59+07:00');
+var DEADLINE = new Date('2026-10-20T23:59:59+07:00');
 
 /** One application per email address. */
 var ONE_PER_EMAIL = true;

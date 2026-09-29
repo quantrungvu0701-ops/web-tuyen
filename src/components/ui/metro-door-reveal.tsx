@@ -1,5 +1,7 @@
 "use client";
 
+import { Sticker } from "@/components/v24/ui";
+
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 
 /* ------------------------------------------------------------------ tokens
@@ -35,24 +37,20 @@ const DOORWAYS = [
 ];
 
 const TOKENS = {
-  // Matches "Giới thiệu"/"Các sự kiện chính", per the site-wide unification.
-  // The car itself (steel, glass, blue doors, red roundel) still carries its
-  // own dark palette below — only the platform this whole thing stands on
-  // changed. The title and idle dots, which used to sit on that dark platform
-  // straight in white, are recoloured to dark ink further down so they don't
-  // vanish against it.
-  platform: "#FEF6E6",
-  steel: "#C4C9CC",
-  steelDark: "#A3A9AD",
-  steelLight: "#DDE1E3",
-  doorBlue: "#1F63A6",
-  doorBlueLight: "#2C78BF",
-  doorBlueDark: "#174C80",
+  // Thế hệ 24: the one deep section on the page — a plum platform, so the
+  // videos read like a screen in a dark room, and a KV-pink train on it.
+  platform: "#3F0A26",
+  steel: "#FFB8C6",
+  steelDark: "#F08AA5",
+  steelLight: "#FFD9DF",
+  doorBlue: "#FF2E7B",
+  doorBlueLight: "#FF5A95",
+  doorBlueDark: "#E0115F",
   glass: "#243038",
   rubber: "#0F1113",
   underframe: "#171A1D",
-  roundel: "#D3202A",
-  sticker: "#F0B429",
+  roundel: "#FFE98A",
+  sticker: "#FFD84D",
 } as const;
 
 /** Cell widths as a fraction of the visible shell width. */
@@ -164,13 +162,14 @@ export default function MetroDoorReveal() {
   return (
     <section
       ref={sectionRef}
-      className="w-full px-4 py-20 md:px-8"
+      id="mv" className="w-full px-4 py-28 md:px-8 lg:py-36"
       style={{ backgroundColor: TOKENS.platform }}
     >
       <div className="mx-auto w-full max-w-7xl">
-        <h2 className="mb-6 text-center text-2xl font-bold uppercase tracking-wide text-[#241F1C] sm:text-3xl">
+        <Sticker className="mb-4 text-center text-[clamp(2.4rem,5vw,4.4rem)]">MV của Hội</Sticker>
+        <p className="mb-10 text-center font-display text-xl text-pink-200 sm:text-2xl">
           {DOORWAYS[index].label}
-        </h2>
+        </p>
 
         <div
           className="relative overflow-hidden rounded-sm shadow-2xl"
@@ -251,7 +250,7 @@ export default function MetroDoorReveal() {
               className="h-2.5 w-2.5 rounded-full transition-colors"
               style={{
                 backgroundColor:
-                  i === index ? TOKENS.roundel : "rgba(36, 31, 28, 0.26)",
+                  i === index ? TOKENS.roundel : "rgba(255, 255, 255, 0.35)",
               }}
             />
           ))}

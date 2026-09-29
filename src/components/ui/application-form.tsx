@@ -17,14 +17,14 @@ import { formatDeadline, isClosed } from "@/lib/deadline";
 /* ------------------------------------------------------------------ tokens */
 
 const T = {
-  bg: "#FEF6E6",
-  ink: "#241F1C",
-  muted: "#6B5A44",
-  line: "rgba(36, 31, 28, 0.14)",
-  accent: "#E80808",
-  card: "#FFFCF5",
+  bg: "#FFF7EE",
+  ink: "#3F0A26",
+  muted: "#8A3A5E",
+  line: "rgba(63, 10, 38, 0.14)",
+  accent: "#E0115F",
+  card: "#FFFFFF",
   danger: "#C22118",
-  ok: "#1F7A4D",
+  ok: "#23713A",
 } as const;
 
 /**
@@ -158,7 +158,7 @@ function QuestionField({
                     field.type === "radio" ? "rounded-full" : "rounded-[5px]"
                   }`}
                   style={{
-                    borderColor: selected ? T.accent : "#C9BBA8",
+                    borderColor: selected ? T.accent : "#E7B9C6",
                     backgroundColor: selected ? T.accent : "#fff",
                   }}
                 >
@@ -301,6 +301,23 @@ export default function ApplicationForm() {
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
+      // Apps Script answers 200 even when it turns an application away, so
+      // the verdict is in the body, not the status.
+      const reply = (await res.json().catch(() => null)) as
+        | { ok: boolean; error?: string }
+        | null;
+      if (!reply?.ok) {
+        setStatus("error");
+        setSendError(
+          reply?.error === "duplicate"
+            ? "Email này đã được dùng để nộp đơn. Mỗi bạn chỉ nộp một đơn — nếu cần sửa, hãy liên hệ ban tổ chức."
+            : reply?.error === "closed"
+              ? `Thời gian nhận đơn đã kết thúc lúc ${formatDeadline()}.`
+              : "Chưa gửi được đơn. Bài làm của em vẫn được lưu — hãy thử lại sau ít phút.",
+        );
+        return;
+      }
+
       setStatus("sent");
       // Only now — a draft cleared before the Sheet confirmed would take the
       // applicant's whole afternoon with it.
@@ -442,16 +459,15 @@ export default function ApplicationForm() {
 function Shell({ children }: { children: React.ReactNode }) {
   return (
     <main className="min-h-dvh w-full" style={{ backgroundColor: T.bg }}>
-      {/* The hero artwork, whole and uncropped — it already carries the
-          "Tuyển Cộng tác viên, thế hệ thứ 23" wordmark, so the page does not
-          repeat it in text below. The real heading is still in the markup for
-          screen readers and search, just not drawn twice. */}
+      {/* The Thế hệ 24 key visual, whole and uncropped — it already carries
+          the "Tuyển Cộng tác viên" lettering, so the page heading below
+          names the form rather than repeating the campaign. */}
       <a href="/" aria-label="Về trang chủ" className="block">
         <Image
-          src="/hero-background.webp"
-          alt="Tuyển Cộng tác viên — Hội Sinh viên trường Đại học Ngoại thương, thế hệ thứ 23"
-          width={2826}
-          height={1044}
+          src="/kv/kv-banner.webp"
+          alt="Tuyển Cộng tác viên — Hội Sinh viên trường Đại học Ngoại thương, thế hệ thứ 24"
+          width={2880}
+          height={960}
           priority
           className="h-auto w-full"
         />
@@ -459,7 +475,7 @@ function Shell({ children }: { children: React.ReactNode }) {
 
       <div className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-6 sm:py-14">
         <h1
-          className="mb-8 text-center font-display text-3xl font-semibold leading-tight sm:text-4xl"
+          className="mb-8 text-center font-display text-[clamp(2rem,5vw,2.8rem)] leading-tight"
           style={{ color: T.ink }}
         >
           ĐƠN ỨNG TUYỂN CỘNG TÁC VIÊN

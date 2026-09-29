@@ -1,51 +1,214 @@
 @import "tailwindcss";
 
+/* ----------------------------------------------------------------------------
+   Thế hệ 24 — the palette is lifted from the key visual (COVER.ai), not
+   invented: its vector fills and a quantised read of its gradients.
+   Sunrise sky → pink road → green hills; plum is the ink the faces are drawn in.
+---------------------------------------------------------------------------- */
 :root {
-  /* Flat, matching the "Giới thiệu" section (about-hsv.tsx) exactly, so the
-     one backdrop that shows through any gap between sections reads as the
-     same surface as the page's own content rather than a leftover peach-pink
-     gradient from last year's site. */
-  --background: #fef6e6;
-  --background-top: #fef6e6;
-  --background-bottom: #fef6e6;
-  --foreground: #241f1c;
+  --sky-peach: #fde3d6;
+  --butter: #faf4bf;
+  --cream: #fff7ee;
+  --blush: #ffeef0;
+  --pink-100: #ffd9df;
+  --pink-200: #ffb8c6;
+  --pink-300: #ff8ba4;
+  --pink-500: #ff2e7b; /* the KV's hot pink: lettering outline, GO, swoosh */
+  --pink-600: #e0115f; /* white text on this passes 4.5:1; on --pink-500 it does not */
+  --pink-700: #c20d52;
+  --coral: #f1a292; /* the lettering's extrusion */
+  --plum-900: #3f0a26;
+  --plum-700: #6f0a3d; /* the faces' line colour */
+  --plum-500: #8a3a5e;
+  --grass: #84c35c;
+  --grass-deep: #23713a;
+  --mirror: #98e6f4;
+  --bi: #f2a85f;
 
-  /* Warm, pink-tinted — not pure #fff, so cards read as one surface in the
-     same palette rather than a copy-paste seam on the pink body. */
-  --card: #fff8f5;
-  --card-foreground: #241f1c;
+  --background: var(--cream);
+  --foreground: var(--plum-900);
+  --muted-foreground: var(--plum-500);
+  --accent: var(--pink-600);
+  --accent-hover: var(--pink-700);
+  --accent-foreground: #fff;
+  --border: color-mix(in srgb, var(--plum-900) 12%, transparent);
 
-  /* Accent — HSV/FTU red. TODO: swap this single value for the confirmed
-     brand hex once the BCH finalizes this year's theme; every CTA, link
-     and highlight on the site reads from this one token. */
-  --accent: #a6192e;
-  --accent-hover: #8a1526;
-  --accent-foreground: #ffffff;
-  --accent-tint: #fbeaec;
+  /* One soft, warm depth system: every raised thing casts plum, not grey. */
+  --shadow-sm: 0 2px 6px -2px rgb(63 10 38 / 0.14);
+  --shadow-md: 0 14px 34px -16px rgb(63 10 38 / 0.32);
+  --shadow-lg: 0 30px 60px -28px rgb(63 10 38 / 0.42);
 
-  --muted: #f8e3e2;
-  --muted-foreground: #7a5f5c;
-
-  --border: #f0d3d6;
-  --ring: #a6192e;
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  /* Hover lifts: fast out, long soft settle, no overshoot. (Still named
+     "spring" at its call sites; it no longer bounces.) */
+  --ease-spring: cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --color-card: var(--card);
-  --color-card-foreground: var(--card-foreground);
+  --color-muted-foreground: var(--muted-foreground);
   --color-accent: var(--accent);
   --color-accent-hover: var(--accent-hover);
   --color-accent-foreground: var(--accent-foreground);
-  --color-accent-tint: var(--accent-tint);
-  --color-muted: var(--muted);
-  --color-muted-foreground: var(--muted-foreground);
   --color-border: var(--border);
-  --color-ring: var(--ring);
+  --color-cream: var(--cream);
+  --color-blush: var(--blush);
+  --color-butter: var(--butter);
+  --color-pink-100: var(--pink-100);
+  --color-pink-200: var(--pink-200);
+  --color-pink-300: var(--pink-300);
+  --color-pink-500: var(--pink-500);
+  --color-pink-600: var(--pink-600);
+  --color-pink-700: var(--pink-700);
+  --color-plum-900: var(--plum-900);
+  --color-plum-700: var(--plum-700);
+  --color-plum-500: var(--plum-500);
+  --color-grass: var(--grass);
+  --color-grass-deep: var(--grass-deep);
 
-  --font-display: var(--font-fraunces);
-  --font-sans: var(--font-inter);
+  --font-display: var(--font-bango);
+  --font-accent: var(--font-lf-negrita);
+  --font-sign: var(--font-ps-bolden);
+  --font-sans: var(--font-be-vietnam);
+}
+
+html {
+  scrollbar-color: var(--pink-300) var(--cream);
+}
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  font-feature-settings: "kern", "liga";
+}
+
+::selection {
+  background: var(--pink-500);
+  color: #fff;
+}
+
+::-webkit-scrollbar {
+  width: 12px;
+}
+::-webkit-scrollbar-track {
+  background: var(--cream);
+}
+::-webkit-scrollbar-thumb {
+  background: var(--pink-200);
+  border: 3px solid var(--cream);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--pink-300);
+}
+
+a:focus-visible,
+button:focus-visible,
+input:focus-visible,
+select:focus-visible,
+textarea:focus-visible,
+[tabindex]:focus-visible {
+  outline: 3px solid var(--pink-500);
+  outline-offset: 3px;
+  border-radius: 6px;
+}
+
+input,
+textarea {
+  caret-color: var(--pink-600);
+}
+
+/* ----------------------------------------------------------------------------
+   Sticker lettering — the KV's title treatment, live and selectable:
+   white face, a thick pink outline, a coral extrusion underneath.
+   Two stacked copies (the back one aria-hidden) rather than paint-order,
+   which Chromium ignores on HTML text. Both copies share one grid cell, so
+   they wrap identically at any width.
+---------------------------------------------------------------------------- */
+.sticker {
+  display: grid;
+  font-family: var(--font-display);
+  line-height: 1.02;
+  letter-spacing: 0.01em;
+  text-wrap: balance;
+}
+.sticker > * {
+  grid-area: 1 / 1;
+}
+.sticker-back {
+  color: var(--pink-600);
+  -webkit-text-stroke: 0.2em var(--pink-600);
+  text-shadow:
+    0 0.1em 0 var(--coral),
+    0 0.16em 0.06em rgb(111 10 61 / 0.28);
+}
+.sticker-front {
+  color: #fff;
+  position: relative;
+}
+/* On a pale ground the white face is carried by its outline alone; the ink
+   variant keeps the outline but fills with plum so it reads at a glance. */
+.sticker[data-tone="ink"] .sticker-front {
+  color: var(--plum-900);
+}
+.sticker[data-tone="ink"] .sticker-back {
+  color: #fff;
+  -webkit-text-stroke-color: #fff;
+  text-shadow:
+    0 0.09em 0 var(--pink-300),
+    0 0.14em 0.08em rgb(111 10 61 / 0.2);
+}
+
+/* ----------------------------------------------------------------------------
+   Idle motion for the KV cast. Slow, small and out of phase with each other,
+   so the scene breathes rather than dances.
+---------------------------------------------------------------------------- */
+@keyframes drift {
+  from { transform: translate3d(-3%, 0, 0); }
+  to { transform: translate3d(3%, 0, 0); }
+}
+@keyframes bob {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  50% { transform: translate3d(0, -4%, 0) rotate(-2deg); }
+}
+@keyframes glide {
+  0%, 100% { transform: translate3d(0, 0, 0) rotate(-3deg); }
+  50% { transform: translate3d(2%, -6%, 0) rotate(3deg); }
+}
+@keyframes hop {
+  0%, 70%, 100% { transform: translate3d(0, 0, 0) rotate(0deg); }
+  78% { transform: translate3d(0, -7%, 0) rotate(-3deg); }
+  86% { transform: translate3d(0, 0, 0) rotate(1deg); }
+}
+@keyframes pulse-pop {
+  0%, 60%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  70% { transform: scale(1.18) rotate(-6deg); }
+  80% { transform: scale(0.94) rotate(3deg); }
+}
+@keyframes lamp {
+  0%, 30% { opacity: 1; }
+  33%, 100% { opacity: 0; }
+}
+@keyframes blink {
+  0%, 30% { opacity: 1; transform: scale(1.15); }
+  33%, 100% { opacity: 0.28; transform: scale(1); }
+}
+@keyframes rise {
+  from { opacity: 0; transform: translate3d(0, 28px, 0) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+.anim-drift { animation: drift var(--dur, 26s) ease-in-out infinite alternate; }
+.anim-bob { animation: bob var(--dur, 4.2s) ease-in-out infinite; }
+.anim-glide { animation: glide var(--dur, 7s) ease-in-out infinite; }
+.anim-hop { animation: hop var(--dur, 5.5s) var(--ease-out) infinite; }
+.anim-pulse { animation: pulse-pop var(--dur, 2.6s) var(--ease-out) infinite; }
+
+/* The hero assembles once on load, each piece settling into its KV spot. */
+.enter {
+  animation: rise 0.9s var(--ease-out) both;
+  animation-delay: calc(var(--d, 0s) + var(--enter-offset, 0s));
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -59,126 +222,97 @@
   }
 }
 
-/* Peach-to-blush vertical gradient plus a faint polka-dot texture — the two
-   decorative signatures of last year's site, kept subtle enough (a couple
-   percent opacity) to sit behind content as atmosphere, not compete with it.
-   Fixed attachment so the gradient reads as one continuous backdrop behind
-   the whole page rather than resetting per section as the reader scrolls. */
-body {
-  background-color: var(--background);
-  background-image:
-    radial-gradient(circle, color-mix(in srgb, var(--accent) 14%, transparent) 1.5px, transparent 1.5px),
-    linear-gradient(180deg, var(--background-top) 0%, var(--background) 45%, var(--background-bottom) 100%);
-  background-size:
-    26px 26px,
-    100% 100%;
-  background-attachment: fixed, fixed;
-  color: var(--foreground);
-}
-
-/* Marquee rows (event strips, hero promo banner). The track holds two copies
-   of its children, so travelling exactly half its width loops seamlessly. */
+/* Marquee rows. The track holds two copies of its children, so travelling
+   exactly half its width loops seamlessly. */
 @keyframes marquee-left {
-  from {
-    transform: translateX(0);
-  }
-  to {
-    transform: translateX(-50%);
-  }
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
 }
-
-@keyframes marquee-right {
-  from {
-    transform: translateX(-50%);
-  }
-  to {
-    transform: translateX(0);
-  }
-}
-
 .marquee-track {
-  animation-duration: var(--marquee-duration, 40s);
-  animation-timing-function: linear;
-  animation-iteration-count: infinite;
+  animation: marquee-left var(--marquee-duration, 40s) linear infinite;
   will-change: transform;
 }
-
-.marquee-track[data-direction="left"] {
-  animation-name: marquee-left;
-}
-
-.marquee-track[data-direction="right"] {
-  animation-name: marquee-right;
-}
-
 @media (prefers-reduced-motion: reduce) {
-  .marquee-track {
-    animation: none !important;
-    transform: none !important;
-  }
+  .marquee-track { animation: none !important; transform: none !important; }
 }
 
-::selection {
-  background: var(--accent);
-  color: var(--accent-foreground);
-}
-
-/* A themed focus ring, not the browser default blue outline — applied to
-   every interactive element site-wide. Keyboard-only (:focus-visible), so
-   mouse/touch interaction stays clean. */
-a:focus-visible,
-button:focus-visible,
-[tabindex]:focus-visible {
-  outline: 2px solid var(--accent);
-  outline-offset: 3px;
-  border-radius: 4px;
-}
-
-/* The diagonal hatch used by SmartImage's pending-asset placeholder — a
-   flat muted rectangle reads as an empty box; a faint pattern reads as a
-   deliberately-designed "content coming soon" state. */
-.placeholder-hatch {
+/* Where a real photo will go. A hatch reads as "content coming", a flat box
+   reads as broken. */
+.photo-slot {
+  background-color: var(--pink-100);
   background-image: repeating-linear-gradient(
     -45deg,
-    color-mix(in srgb, var(--border) 70%, transparent) 0,
-    color-mix(in srgb, var(--border) 70%, transparent) 1px,
-    transparent 1px,
-    transparent 12px
+    rgb(255 255 255 / 0.55) 0 2px,
+    transparent 2px 14px
   );
 }
 
-/* ---------------------------------------------------------------------------
-   Animated gradient background (BackgroundGradientAnimation).
-   Tailwind v4 has no tailwind.config.js — utilities come from theme variables,
-   so the `animate-first` … `animate-fifth` classes are declared here rather
-   than in a JS config.
---------------------------------------------------------------------------- */
-@theme {
-  --animate-first: moveVertical 30s ease infinite;
-  --animate-second: moveInCircle 20s reverse infinite;
-  --animate-third: moveInCircle 40s linear infinite;
-  --animate-fourth: moveHorizontal 40s ease infinite;
-  --animate-fifth: moveInCircle 20s ease infinite;
+/* ----------------------------------------------------------------------------
+   Hero scene — the cover at its own scale, sized by one number, --H (its
+   height; the cover is 3H wide). The left side is pinned to the screen's left
+   edge, the right cliff to its right edge, and the sky between them is drawn
+   in by --squeeze, the cover's overflow past the screen (see place() in Hero).
+---------------------------------------------------------------------------- */
+.hero {
+  /* Phones: the scene is a band under the lettering, left side only. */
+  --H: min(82vw, 42svh);
+  --x0: calc(var(--H) * -0.15);
+  --squeeze: 0px;
+}
+.hero-scene {
+  height: var(--H);
+}
+.hero-sky {
+  left: var(--x0);
+  width: calc(var(--H) * 3);
+  background:
+    url("/kv/sky.webp") left bottom / 100% var(--H) no-repeat,
+    url("/kv/sky-top.webp") left top / 100% 100% no-repeat;
+}
+/* From cover x 5600 (open sky) to the right edge; masked in over 700px. */
+.hero-sky-right {
+  left: auto;
+  width: calc(var(--H) * 1.1333);
+  background-position: right bottom, right top;
+  background-size: calc(var(--H) * 3) var(--H), calc(var(--H) * 3) 100%;
+  mask-image: linear-gradient(90deg, transparent, black 20.6%);
+}
+.hero-right-only {
+  display: none;
+}
+.hero-copy {
+  padding-bottom: calc(var(--H) * 0.92);
+}
+.hero-title {
+  max-width: 560px;
+}
+.hero-title > span {
+  transform: translateY(-14px);
 }
 
-@keyframes moveHorizontal {
-  0% { transform: translateX(-50%) translateY(-10%); }
-  50% { transform: translateX(50%) translateY(10%); }
-  100% { transform: translateX(-50%) translateY(-10%); }
-}
-
-@keyframes moveInCircle {
-  0% { transform: rotate(0deg); }
-  50% { transform: rotate(180deg); }
-  100% { transform: rotate(360deg); }
-}
-
-@keyframes moveVertical {
-  0% { transform: translateY(-50%); }
-  50% { transform: translateY(50%); }
-  100% { transform: translateY(-50%); }
-}
-
-@media (prefers-reduced-motion: reduce) {
-  .gradients-container > * { animation: none !important; }
+@media (min-width: 1024px) {
+  .hero {
+    /* The whole cover, both mountains, with ~9% of its width taken out of
+       the open sky; capped so a very wide screen keeps the nav clear. */
+    --H: min(calc(100vw / 2.75), calc(100svh - 72px));
+    --x0: 0px;
+    --squeeze: calc(var(--H) * 3 - 100%);
+  }
+  .hero-right-only {
+    display: block;
+  }
+  /* The lettering takes the sky between the pole (x 3700) and the car
+     (1460 from the right), and sits above the grass. */
+  .hero-copy {
+    position: absolute;
+    inset: 0 calc(var(--H) * 0.4867) 0 calc(var(--H) * 1.2333);
+    justify-content: center;
+    padding: 72px 0 calc(var(--H) * 0.25 - var(--band));
+  }
+  .hero-title {
+    max-width: min(100%, 760px);
+  }
+  .hero-title > span {
+    transform: none;
+  }
 }

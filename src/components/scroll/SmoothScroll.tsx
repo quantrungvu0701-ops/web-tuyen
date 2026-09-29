@@ -56,10 +56,29 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
       ignoreMobileResize: true,
     });
 
+    // Every in-page "#section" link glides through the smoother instead of
+    // jumping — one delegated listener rather than a handler on each button.
+    // The nav handles its own clicks (with its own clearance) and marks them
+    // defaultPrevented, so it is left alone here.
+    const onClick = (e: MouseEvent) => {
+      if (e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey) return;
+      const a = (e.target as Element | null)?.closest?.("a[href^='#']");
+      const href = a?.getAttribute("href");
+      if (!href || href === "#") return;
+      const target = document.querySelector(href);
+      if (!target) return;
+      e.preventDefault();
+      smoother.scrollTo(target, true, "top top");
+    };
+    document.addEventListener("click", onClick);
+
     // Killed by instance rather than via ScrollSmoother.get(): in development
     // React mounts effects twice, and a cleanup that looked up "the current
     // smoother" would kill the second instance instead of its own.
-    return () => smoother.kill();
+    return () => {
+      document.removeEventListener("click", onClick);
+      smoother.kill();
+    };
   });
 
   return (

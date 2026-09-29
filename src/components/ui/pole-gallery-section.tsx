@@ -4,6 +4,8 @@ import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
 import { useGSAP } from "@gsap/react";
+import { ButtonLink, Sticker } from "@/components/v24/ui";
+import { EVENTS, SUPPORT_PROJECTS, type SupportProject } from "@/lib/site";
 import GallerySlider, {
   IMAGES_PER_SLIDE,
   type GallerySlide,
@@ -12,117 +14,70 @@ import GallerySlider, {
 gsap.registerPlugin(ScrollTrigger, useGSAP);
 
 /* ------------------------------------------------------------------ design
- * One sign post stands in the left rail. Four blades are bracketed round it
- * at 90 degrees. Scrolling pins the section and turns the cluster:
- * whichever category is active has its sign swung round to point right and be
- * read, while the other three end up edge-on or pointing left off the screen.
- * The gallery beside it cross-fades in step with the turn.
+ * One sign post stands in the left rail, running from just under the nav to
+ * the bottom of the screen. Five signs are stacked down it, one per category.
+ * Scrolling pins the section and swings the signs round on their mounting
+ * bands: the active category's sign faces the reader, its neighbours turn
+ * edge-on, and the rest show their blank backs. The panel beside the post
+ * cross-fades in step with the turn.
  *
- * Styled as city signage: a galvanised steel post carrying green
- * street-name blades, per the reference. Drawn flat and illustrative rather
- * than photo-real, because the rest of this site is flat pastel shapes.
+ * Styled from the Thế hệ 24 key visual: the pink post with green collars; the
+ * GO blade and the BFF plate for the four event categories, and the K65 oval
+ * for the last one, the student-support projects. Those are projects rather
+ * than events, so their panel is the KV's convex mirrors, one per project,
+ * each with a button out to the project's own page.
  *
- * The post itself does not turn, only the blades do, on their mounting bands.
- * A flat post rotated 45 degrees collapses to a line, so a spinning post would
- * read as a glitch. Blades on a swivel read as a mechanism.
+ * The post itself does not turn, only the signs do. A flat post rotated 45
+ * degrees collapses to a line, so a spinning post would read as a glitch.
+ * Signs on a swivel read as a mechanism.
  */
 
-const N = 4;
+/** Four event galleries, then the projects panel. */
+const N = EVENTS.length + 1;
+const PROJECTS_INDEX = EVENTS.length;
 
 /** Fraction of each step spent resting on a category before the turn starts. */
 const HOLD = 0.42;
 
-/** The pinned layout needs the rail AND the 737px gallery side by side. */
+/** The pinned layout needs the rail AND a wide panel side by side. */
 const PINNED_MQ = "(min-width: 1280px)";
-
-/** The site's fixed nav sits over the top of the pinned stage. */
-const NAV_CLEARANCE = 72;
-
-/** Breathing room above and below the assembly once it is scaled to fit. */
-const STAGE_PAD = 40;
 
 const GEO = {
   /** Post centre. Signs are mounted centred ON the post, so this has to be
-   *  at least half the widest sign clear of x = 0 or the active sign's own
-   *  text runs off the left edge. */
+   *  at least half the widest sign clear of x = 0. */
   postCenter: 180,
-  /** A city sign post is a slim steel tube, not a timber baulk. */
+  /** The KV pole: slim, so the signs read before the post does. */
   postWidth: 30,
   railWidth: 350,
-  /** Gallery box cap; also what keeps a gutter at the window edge. */
-  galleryMaxWidth: 1020,
+  /** Where the post's cap sits: just under the floating nav (it ends ~80px). */
+  postTop: 90,
+  /** From the cap down to the first sign: room for the two top collars. */
+  capToSigns: 34,
+  /** At least this much post shows under the last sign's collar. */
+  footMin: 26,
   /** Vertical air between two signs on the post. */
   signGap: 12,
+  /** Panel cap; also what keeps a gutter at the window edge. */
+  panelMaxWidth: 1180,
 } as const;
 
+const CLUSTER_TOP = GEO.postTop + GEO.capToSigns;
+
 /**
- * The four signs, in the reference photo's own order down the pole: two green
- * street-name blades, a red octagon, an amber placard.
- *
- * Each carries its own box because the shapes demand it — an octagon has to be
- * square to read as one, while a street blade is long and thin. One shared
- * plate size could only ever be right for one of them.
+ * The five signs, top to bottom: blade, plate, blade, plate for the four
+ * event categories, and the K65 oval at the foot for the projects.
  */
 type SignStyle = {
   w: number;
   h: number;
-  octagon?: true;
-  face: string;
-  faceDark: string;
-  keyline: string;
-  ink: string;
+  shape: "oval" | "blade" | "plate";
   fontSize: number;
-  /** Keyline inset; the octagon needs a wider one to look evenly bordered. */
-  pad: number;
 };
 
-const SIGNS: SignStyle[] = [
-  // "Brown St" — the long blade.
-  {
-    w: 300,
-    h: 72,
-    face: "#15683C",
-    faceDark: "#0E4A2A",
-    keyline: "#FFFFFF",
-    ink: "#FFFFFF",
-    fontSize: 17,
-    pad: 7,
-  },
-  // "Florence St" — the shorter blade crossed behind it.
-  {
-    w: 264,
-    h: 68,
-    face: "#15683C",
-    faceDark: "#0E4A2A",
-    keyline: "#FFFFFF",
-    ink: "#FFFFFF",
-    fontSize: 15,
-    pad: 7,
-  },
-  // STOP.
-  {
-    w: 190,
-    h: 190,
-    octagon: true,
-    face: "#BE1A20",
-    faceDark: "#8E1216",
-    keyline: "#FFFFFF",
-    ink: "#FFFFFF",
-    fontSize: 15,
-    pad: 11,
-  },
-  // "CROSS TRAFFIC DOES NOT STOP" — amber, and the only one lettered in black.
-  {
-    w: 230,
-    h: 80,
-    face: "#F2BE12",
-    faceDark: "#D9A600",
-    keyline: "#1A1A1A",
-    ink: "#141414",
-    fontSize: 15,
-    pad: 7,
-  },
-];
+const BLADE: SignStyle = { w: 300, h: 92, shape: "blade", fontSize: 21 };
+const PLATE: SignStyle = { w: 286, h: 92, shape: "plate", fontSize: 20 };
+const OVAL: SignStyle = { w: 300, h: 150, shape: "oval", fontSize: 20 };
+const SIGNS: SignStyle[] = [BLADE, PLATE, BLADE, PLATE, OVAL];
 
 /** Signs stack down the post, so each one's top depends on those above it. */
 const SIGN_TOPS = SIGNS.reduce<number[]>((acc, s, i) => {
@@ -130,27 +85,24 @@ const SIGN_TOPS = SIGNS.reduce<number[]>((acc, s, i) => {
   return acc;
 }, []);
 
-const CLUSTER_H =
-  SIGN_TOPS[SIGN_TOPS.length - 1] + SIGNS[SIGNS.length - 1].h;
+const CLUSTER_H = SIGN_TOPS[SIGN_TOPS.length - 1] + SIGNS[SIGNS.length - 1].h;
 
 const TOKENS = {
-  background: "#FEF6E6",
-  heading: "#241F1C",
-  /* Galvanised steel, lit from the left. */
-  steelHi: "#D9DEE2",
-  steel: "#AEB4B9",
-  steelMid: "#8B9197",
-  steelDark: "#5A5F64",
-  /* US highway green — the street-name blade in the reference. */
-  signGreen: "#12693A",
-  signGreenDark: "#0C4A29",
-  signInk: "#FFFFFF",
-  bolt: "#4C5257",
+  background: "var(--blush)",
+  pink: "#FF2E7B",
+  pinkDeep: "#E0115F",
+  pinkPale: "#FFE1E8",
+  cream: "#FFF4E6",
+  plum: "#3F0A26",
+  collar: "#2F8F4B",
+  collarHi: "#6CCB7D",
+  mirrorRim: "#27B04A",
+  mirrorRimHi: "#7FE39A",
 } as const;
 
 /**
  * TODO(photos): placeholder photos. Only 4 distinct images exist in
- * assets/source and they are all landscape, so they are cropped to 16:9 and
+ * assets/source and they are all landscape, so they are cropped to fit and
  * cycled. Every slide needs 3 of them.
  */
 const PHOTOS = [
@@ -160,43 +112,26 @@ const PHOTOS = [
   "/gallery/p4.webp",
 ];
 
-const gallerySlides = (label: string, count: number): GallerySlide[] =>
-  Array.from({ length: count }, (_, i) => ({
-    id: `${label}-${i + 1}`,
-    title: `${label} ${i + 1}`,
-    description:
-      "Placeholder — mô tả hoạt động sẽ được thay thế khi có nội dung thật.",
-    images: Array.from(
-      { length: IMAGES_PER_SLIDE },
-      (_, k) => PHOTOS[(i * IMAGES_PER_SLIDE + k) % PHOTOS.length],
-    ),
-  }));
-
 type Category = { id: number; title: string; slides: GallerySlide[] };
 
-/** Slide counts are the real ones: 4, 4, 2, 3. */
-const CATEGORIES: Category[] = [
-  {
-    id: 0,
-    title: "Chương trình\nchính trị",
-    slides: gallerySlides("Hoạt động", 4),
-  },
-  {
-    id: 1,
-    title: "Chương trình\nsân khấu",
-    slides: gallerySlides("Sự kiện", 4),
-  },
-  {
-    id: 2,
-    title: "Chương trình\ntình nguyện",
-    slides: gallerySlides("Hình ảnh", 2),
-  },
-  {
-    id: 3,
-    title: "Chương trình\nnội bộ",
-    slides: gallerySlides("Kỷ niệm", 3),
-  },
-];
+/** One slide per event; copy lives in src/lib/site.ts. */
+const CATEGORIES: Category[] = EVENTS.map((cat, c) => ({
+  id: c,
+  title: cat.title,
+  slides: cat.events.map((ev, i) => ({
+    id: `${c}-${i}`,
+    title: ev.name,
+    description: ev.body,
+    images:
+      ev.photos ??
+      Array.from(
+        { length: IMAGES_PER_SLIDE },
+        (_, k) => PHOTOS[(c * 5 + i * IMAGES_PER_SLIDE + k) % PHOTOS.length],
+      ),
+  })),
+}));
+
+const TITLES = [...CATEGORIES.map((c) => c.title), SUPPORT_PROJECTS.title];
 
 /* ------------------------------------------------------------------- maths */
 
@@ -217,38 +152,45 @@ function positionAt(progress: number) {
   return i + easeInOut(clamp01((frac - HOLD) / (1 - HOLD)));
 }
 
+/**
+ * A sign's swing at category position `p`: facing the reader when it is the
+ * active one, a quarter-turn away for each step off, and never past a half
+ * turn — so every sign two or more steps away shows its blank back, and no
+ * far sign ever comes round to face front beside the one being read.
+ */
+const signAngle = (k: number, p: number) =>
+  Math.max(-180, Math.min(180, (k - p) * 90));
+
 /* --------------------------------------------------------------- component */
 
 export default function PoleGallerySection() {
   const sectionRef = useRef<HTMLElement>(null);
   const stageRef = useRef<HTMLDivElement>(null);
-  const fitRef = useRef<HTMLDivElement>(null);
-  const armsRef = useRef<HTMLDivElement>(null);
-  const galleryRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const clusterRef = useRef<HTMLDivElement>(null);
+  const signRefs = useRef<(HTMLDivElement | null)[]>([]);
+  const panelRefs = useRef<(HTMLDivElement | null)[]>([]);
 
   useGSAP(
     () => {
       const mm = gsap.matchMedia();
 
-      // Below xl there is no room for rail and gallery side by side, and a
-      // reduced-motion reader should not be handed a scrub at all. Both fall
-      // through to the stacked layout, which needs no JS.
+      // Below xl there is no room for rail and panel side by side, and a
+      // reduced-motion reader should not be handed a scrub at all.
       mm.add(
         { pinned: `${PINNED_MQ} and (prefers-reduced-motion: no-preference)` },
         (ctx) => {
           if (!ctx.conditions?.pinned) return;
 
           const apply = (p: number) => {
-            if (armsRef.current) {
-              armsRef.current.style.transform = `rotateY(${-p * 90}deg)`;
-            }
-            galleryRefs.current.forEach((el, k) => {
+            signRefs.current.forEach((el, k) => {
+              if (el) el.style.transform = `rotateY(${signAngle(k, p)}deg)`;
+            });
+            panelRefs.current.forEach((el, k) => {
               if (!el) return;
-              // Each gallery stays solid while its sign faces us and dissolves
+              // Each panel stays solid while its sign faces us and dissolves
               // across the turn. The opacity is the square root of the fade so
               // the two halves of a cross-dissolve sum to roughly constant
-              // brightness: fading both linearly leaves them at 0.3 each
-              // mid-turn, which reads as the section briefly going blank.
+              // brightness instead of the section briefly going blank.
               const s = smoothstep(clamp01(1 - Math.abs(p - k)));
               el.style.opacity = String(Math.sqrt(s));
               el.style.transform = `translateY(${(1 - s) * 12}px) scale(${
@@ -261,31 +203,19 @@ export default function PoleGallerySection() {
 
           apply(0);
 
-          // The stage is exactly one viewport tall and cannot scroll, so any
-          // content taller than it is simply cut away by the section's
-          // overflow-hidden — silently, at BOTH ends, because the stage
-          // centres its content. That is what buried the heading and ate the
-          // gallery's dots on shorter windows. Scale the whole assembly down
-          // to whatever room there actually is instead.
-          //
-          // offsetHeight is the untransformed layout height, so it can be read
-          // back without first undoing the scale we are about to apply.
+          // The signs keep their size; only a window too short to hold all
+          // five above the fold shrinks the stack, so the post's foot always
+          // shows under the last one.
           const fit = () => {
-            const el = fitRef.current;
+            const el = clusterRef.current;
             if (!el) return;
-            const natural = el.offsetHeight;
-            if (!natural) return;
-            const room = window.innerHeight - NAV_CLEARANCE - STAGE_PAD;
-            const scale = Math.min(1, room / natural);
-            el.style.transform = scale < 1 ? `scale(${scale})` : "";
+            const room = window.innerHeight - CLUSTER_TOP - GEO.footMin - 14;
+            const scale = Math.min(1, room / CLUSTER_H);
+            el.style.scale = scale < 1 ? String(scale) : "";
           };
 
           fit();
           window.addEventListener("resize", fit);
-          // The photo strip sizes itself from its own measured width, so the
-          // assembly's height only settles a frame or two after mount.
-          const ro = new ResizeObserver(fit);
-          if (fitRef.current) ro.observe(fitRef.current);
 
           // ScrollTrigger's pin works inside this page's ScrollSmoother;
           // position: sticky does not, because the smoother transforms the
@@ -303,7 +233,6 @@ export default function PoleGallerySection() {
           return () => {
             st.kill();
             window.removeEventListener("resize", fit);
-            ro.disconnect();
           };
         },
       );
@@ -317,98 +246,100 @@ export default function PoleGallerySection() {
     <section
       ref={sectionRef}
       id="su-kien"
-      // overflow-hidden is what cuts the left-pointing signs off at the edge.
       className="relative w-full overflow-hidden"
       style={{ backgroundColor: TOKENS.background }}
     >
       <div
         ref={stageRef}
-        // pt on xl keeps the whole assembly clear of the fixed nav, which
-        // overlays the top of the stage while it is pinned.
-        className="flex w-full flex-col py-16 xl:h-screen xl:justify-center xl:py-0 xl:pt-[72px]"
+        className="relative flex w-full flex-col py-16 xl:h-screen xl:py-0 xl:pt-0"
       >
-        {/* Scaled as one piece so the heading, the post and the dots keep
-            their relationship to each other on any window height. */}
-        <div ref={fitRef} className="w-full origin-center will-change-transform">
-          <h2
-            className="mb-8 px-6 text-center text-3xl font-bold uppercase tracking-wide sm:text-4xl xl:mb-16"
-            style={{ color: TOKENS.heading }}
-          >
-            Các sự kiện chính
-          </h2>
+        <Sticker
+          tone="ink"
+          className="mb-10 px-6 text-center text-[clamp(2.4rem,5vw,4.4rem)] xl:-mt-[6px] xl:mb-10"
+        >
+          Các sự kiện chính
+        </Sticker>
 
-          {/* -------------------------------------------- pinned, xl and up */}
-          <div className="relative hidden xl:flex xl:items-center">
+        {/* -------------------------------------------- pinned, xl and up */}
+        {/* The post: from under the nav to the bottom of the screen. */}
+        <div
+          className="absolute inset-y-0 left-0 z-10 hidden xl:block"
+          style={{
+            width: GEO.railWidth,
+            perspective: "1100px",
+            perspectiveOrigin: `${GEO.postCenter}px ${CLUSTER_TOP + CLUSTER_H / 2}px`,
+          }}
+        >
+          <Post />
           <div
-            className="relative z-10 shrink-0 self-stretch"
+            ref={clusterRef}
+            className="absolute"
             style={{
-              width: GEO.railWidth,
-              perspective: "1100px",
-              perspectiveOrigin: `${GEO.postCenter}px 50%`,
+              left: GEO.postCenter,
+              top: CLUSTER_TOP,
+              width: 0,
+              height: CLUSTER_H,
+              transformOrigin: "0 0",
+              transformStyle: "preserve-3d",
             }}
           >
-            <Post />
-            <Collar />
-            <div
-              ref={armsRef}
-              className="absolute"
-              style={{
-                left: GEO.postCenter,
-                top: "50%",
-                width: 0,
-                height: 0,
-                transformStyle: "preserve-3d",
-                willChange: "transform",
-              }}
-            >
-              {CATEGORIES.map((c, k) => (
-                <SignArm key={c.id} title={c.title} index={k} />
-              ))}
-            </div>
-          </div>
-
-          {/* The four galleries share one box and cross-fade in place. */}
-          <div className="relative min-w-0 flex-1 pr-8">
-            {CATEGORIES.map((c, k) => (
-              <div
-                key={c.id}
+            <Collars />
+            {TITLES.map((title, k) => (
+              <SignArm
+                key={k}
+                title={title}
+                index={k}
                 ref={(el) => {
-                  galleryRefs.current[k] = el;
+                  signRefs.current[k] = el;
                 }}
-                className={k === 0 ? "" : "absolute inset-0"}
-                style={{
-                  opacity: k === 0 ? 1 : 0,
-                  willChange: "opacity, transform",
-                }}
-                aria-hidden={k === 0 ? undefined : true}
-              >
-                {/* Capped well inside the rail's leftover width so the box
-                    keeps a gutter from the window edge instead of bleeding
-                    off it. The photo itself is capped separately, so this
-                    only decides how much of the neighbours shows. */}
-                <div
-                  className="mx-auto"
-                  style={{ maxWidth: GEO.galleryMaxWidth }}
-                >
-                  <GallerySlider
-                    slides={c.slides}
-                    label={c.title.replace("\n", " ")}
-                  />
-                </div>
-              </div>
+              />
             ))}
-            </div>
           </div>
         </div>
 
-        {/* ------------------------------- stacked fallback, below xl and RM */}
-        <div className="xl:hidden">
-          {CATEGORIES.map((c, k) => (
-            <div key={c.id} className={k > 0 ? "mt-20" : ""}>
+        {/* The panels share one box and cross-fade in place. */}
+        <div
+          className="relative hidden min-h-0 flex-1 xl:block"
+          style={{ marginLeft: GEO.railWidth, marginRight: 32 }}
+        >
+          {TITLES.map((title, k) => (
+            <div
+              key={k}
+              ref={(el) => {
+                panelRefs.current[k] = el;
+              }}
+              className="absolute inset-0"
+              style={{
+                opacity: k === 0 ? 1 : 0,
+                visibility: k === 0 ? "visible" : "hidden",
+                willChange: "opacity, transform",
+              }}
+              aria-hidden={k === 0 ? undefined : true}
+            >
               <div
-                className="relative mb-8"
-                style={{ height: SIGNS[k].h }}
+                className="mx-auto h-full"
+                // 95% of the room beside the post: a little air either side.
+                style={{ width: "95%", maxWidth: GEO.panelMaxWidth }}
               >
+                {k === PROJECTS_INDEX ? (
+                  <ProjectMirrors label={title.replace("\n", " ")} pinned />
+                ) : (
+                  <GallerySlider
+                    slides={CATEGORIES[k].slides}
+                    label={title.replace("\n", " ")}
+                    fill
+                  />
+                )}
+              </div>
+            </div>
+          ))}
+        </div>
+
+        {/* ------------------------------- stacked fallback, below xl */}
+        <div className="xl:hidden">
+          {TITLES.map((title, k) => (
+            <div key={k} className={k > 0 ? "mt-20" : ""}>
+              <div className="relative mb-8" style={{ height: SIGNS[k].h }}>
                 <StaticPostStub />
                 {/* SignFace is inset-0, so this wrapper carries the box. */}
                 <div
@@ -419,14 +350,15 @@ export default function PoleGallerySection() {
                     height: SIGNS[k].h,
                   }}
                 >
-                  <SignFace style={SIGNS[k]} title={c.title} />
+                  <SignFace style={SIGNS[k]} title={title} />
                 </div>
               </div>
               <div className="px-6">
-                <GallerySlider
-                  slides={c.slides}
-                  label={c.title.replace("\n", " ")}
-                />
+                {k === PROJECTS_INDEX ? (
+                  <ProjectMirrors label={title.replace("\n", " ")} />
+                ) : (
+                  <GallerySlider slides={CATEGORIES[k].slides} label={title.replace("\n", " ")} />
+                )}
               </div>
             </div>
           ))}
@@ -439,57 +371,48 @@ export default function PoleGallerySection() {
 /* ------------------------------------------------------------------ pieces */
 
 /**
- * A galvanised steel tube, lit from the left. The hard stops rather than a
- * smooth blend are what make it read as a cylinder in a flat style: a soft
- * gradient just looks like a blurred rectangle at this width.
+ * The key visual's post: a pink tube lit from the left, in the same pinks the
+ * cover's pole is shaded with. Hard stops rather than a smooth blend are what
+ * make it read as a cylinder at this width.
  */
-const POST_FILL = `linear-gradient(90deg, ${TOKENS.steelDark} 0 3px, ${TOKENS.steelHi} 3px 34%, ${TOKENS.steel} 34% 62%, ${TOKENS.steelMid} 62% 86%, ${TOKENS.steelDark} 86% 100%)`;
+const POST_FILL =
+  "linear-gradient(90deg, #C9557D 0 3px, #FFE3EC 3px 30%, #F7A9C1 30% 62%, #E8779E 62% 88%, #C9557D 88% 100%)";
 
-/** The standing post, with the pressed cap a street pole is finished with. */
 function Post() {
   return (
     <div
       aria-hidden="true"
-      className="absolute inset-y-0"
+      className="absolute bottom-0"
       style={{
+        top: GEO.postTop,
         left: GEO.postCenter - GEO.postWidth / 2,
         width: GEO.postWidth,
         background: POST_FILL,
       }}
     >
       <div
-        className="absolute -left-[3px] -right-[3px] top-0 h-2.5 rounded-t-full"
-        style={{
-          background: `linear-gradient(90deg, ${TOKENS.steelMid}, ${TOKENS.steelHi} 45%, ${TOKENS.steelDark})`,
-        }}
+        className="absolute -left-[3px] -right-[3px] top-0 h-3 rounded-t-full"
+        style={{ background: "linear-gradient(90deg, #E8779E, #FFE3EC 45%, #C9557D)" }}
       />
     </div>
   );
 }
 
-/** The mounting bands the blades are bracketed to. */
-function Collar() {
-  const height = CLUSTER_H + 24;
-  const band = `linear-gradient(90deg, ${TOKENS.steelDark}, ${TOKENS.steelHi} 40%, ${TOKENS.steelMid})`;
-  return (
+/** The green collars the cover's signs are clamped on: two above, one below. */
+function Collars() {
+  const band = `linear-gradient(90deg, ${TOKENS.collar}, ${TOKENS.collarHi} 40%, ${TOKENS.collar})`;
+  const w = GEO.postWidth + 8;
+  const at = (top: number) => (
     <div
-      aria-hidden="true"
-      className="absolute -translate-y-1/2"
-      style={{
-        left: GEO.postCenter - GEO.postWidth / 2 - 4,
-        top: "50%",
-        width: GEO.postWidth + 8,
-        height,
-      }}
-    >
-      <div
-        className="absolute inset-x-0 top-0 h-2 rounded-[1px]"
-        style={{ background: band }}
-      />
-      <div
-        className="absolute inset-x-0 bottom-0 h-2 rounded-[1px]"
-        style={{ background: band }}
-      />
+      className="absolute h-2.5 rounded-full"
+      style={{ left: -w / 2, width: w, top, background: band }}
+    />
+  );
+  return (
+    <div aria-hidden="true">
+      {at(-26)}
+      {at(-12)}
+      {at(CLUSTER_H + 12)}
     </div>
   );
 }
@@ -509,32 +432,33 @@ function StaticPostStub() {
   );
 }
 
-
 /**
- * One sign, bolted across the post at its own middle — the post passes behind
- * it, as in the reference; nothing cantilevers out to one side. It carries a
- * face on each side so a sign turned away shows a blank back rather than its
- * own text mirrored.
- *
- * The arm is centred on the post (left: -w/2) and pivots about its own middle,
- * so it turns on the post's axis rather than swinging off it. The four signs
- * sit at different heights, which is what keeps the one showing its blank back
- * from ever landing on top of the one being read.
+ * One sign, fixed across the post at its own middle. It carries a face on
+ * each side so a sign turned away shows a blank back rather than its own text
+ * mirrored. It pivots about its own middle, on the post's axis.
  */
-function SignArm({ title, index }: { title: string; index: number }) {
+function SignArm({
+  title,
+  index,
+  ref,
+}: {
+  title: string;
+  index: number;
+  ref: (el: HTMLDivElement | null) => void;
+}) {
   const s = SIGNS[index];
-  const top = SIGN_TOPS[index] - CLUSTER_H / 2;
 
   return (
     <div
+      ref={ref}
       className="absolute"
       style={{
         left: -s.w / 2,
-        top,
+        top: SIGN_TOPS[index],
         width: s.w,
         height: s.h,
         transformOrigin: "50% 50%",
-        transform: `rotateY(${index * 90}deg)`,
+        transform: `rotateY(${signAngle(index, 0)}deg)`,
         transformStyle: "preserve-3d",
       }}
     >
@@ -552,94 +476,128 @@ function SignArm({ title, index }: { title: string; index: number }) {
   );
 }
 
-/** The octagon, as eight cuts off a square — a STOP sign's own proportions. */
-const OCTAGON =
-  "polygon(29.3% 0%, 70.7% 0%, 100% 29.3%, 100% 70.7%, 70.7% 100%, 29.3% 100%, 0% 70.7%, 0% 29.3%)";
-
 /**
- * A single sign: bracket stub, the shaped face, its printed keyline and the
- * legend. Omit `title` for the blank reverse.
- *
- * The keyline is drawn as a shape inside a shape rather than as a `border`,
- * because a border traces the element's rectangle — on the octagon it would
- * cut straight across all four corner chamfers.
+ * One sign face, in the cover's gummy finish: a soft top highlight, a darker
+ * lower edge, a warm drop shadow. Omit `title` for the blank reverse.
  */
 function SignFace({ style: s, title }: { style: SignStyle; title?: string }) {
-  const shape = s.octagon ? { clipPath: OCTAGON } : { borderRadius: 4 };
+  const gloss = "inset 0 3px 0 rgb(255 255 255 / 0.45), inset 0 -5px 0 rgb(120 0 40 / 0.18)";
+  const drop = "0 14px 22px -12px rgb(63 10 38 / 0.45)";
+
+  let outer: React.CSSProperties;
+  let inner: React.CSSProperties | null = null;
+  let ink: string;
+
+  switch (s.shape) {
+    case "oval":
+      outer = {
+        borderRadius: "50%",
+        background: `linear-gradient(160deg, #FF5A95, ${TOKENS.pink} 55%, ${TOKENS.pinkDeep})`,
+        boxShadow: `${gloss}, ${drop}`,
+      };
+      inner = { inset: 14, borderRadius: "50%", background: TOKENS.cream };
+      ink = TOKENS.pinkDeep;
+      break;
+    case "blade":
+      outer = {
+        borderRadius: 10,
+        background: `linear-gradient(100deg, #FF6F8E, ${TOKENS.pink} 45%, #F24FB1)`,
+        boxShadow: `${gloss}, ${drop}`,
+      };
+      ink = "#FFFFFF";
+      break;
+    case "plate":
+      outer = {
+        borderRadius: 6,
+        background: TOKENS.pinkPale,
+        boxShadow: `inset 0 3px 0 rgb(255 255 255 / 0.7), ${drop}`,
+      };
+      inner = { inset: 7, borderRadius: 3, border: "3px solid #FF7FA3" };
+      ink = "#F23A78";
+      break;
+  }
 
   return (
-    <div className="absolute inset-0">
-      <div
-        className="absolute inset-0"
-        style={{
-          ...shape,
-          background: `
-            linear-gradient(180deg, rgba(255,255,255,.14) 0 4px, rgba(0,0,0,0) 4px),
-            linear-gradient(0deg, rgba(0,0,0,.2) 0 5px, rgba(0,0,0,0) 5px),
-            linear-gradient(180deg, ${s.face}, ${s.faceDark})`,
-          filter: "drop-shadow(0 9px 13px rgba(30,35,30,.3))",
-        }}
-      >
-        {/* Printed keyline, inset the way a real sign's border is */}
+    <div className="absolute inset-0" style={outer}>
+      {inner ? <span aria-hidden="true" className="absolute" style={inner} /> : null}
+      {title ? (
         <span
-          aria-hidden="true"
-          className="pointer-events-none absolute"
+          className="absolute inset-0 flex flex-col items-center justify-center whitespace-pre-line px-6 text-center font-display uppercase leading-[1.08]"
           style={{
-            inset: s.pad,
-            ...(s.octagon
-              ? { clipPath: OCTAGON, background: s.keyline }
-              : {
-                  borderRadius: 2,
-                  border: `2px solid ${s.keyline}`,
-                }),
+            color: ink,
+            fontSize: s.fontSize,
+            textShadow: ink === "#FFFFFF" ? "0 2px 0 rgb(160 0 60 / 0.35)" : "none",
           }}
         >
-          {s.octagon ? (
-            <span
-              className="absolute block"
-              style={{
-                inset: 3,
-                clipPath: OCTAGON,
-                background: s.face,
-              }}
-            />
-          ) : null}
+          {title}
         </span>
+      ) : null}
+    </div>
+  );
+}
 
-        {/* Fixing bolts on the centre line, where the post sits behind */}
+/**
+ * The student-support projects: the KV's convex mirror, once per project,
+ * with the project's picture in the glass and its name as a button out to
+ * the project's page.
+ */
+function ProjectMirrors({ label, pinned = false }: { label: string; pinned?: boolean }) {
+  return (
+    <div
+      role="group"
+      aria-label={label}
+      className={
+        pinned
+          ? "flex h-full items-center justify-center gap-[clamp(48px,7vw,120px)] pb-10"
+          : "flex flex-wrap items-start justify-center gap-x-12 gap-y-10"
+      }
+      style={
+        {
+          "--mirror": pinned
+            ? "min(360px, calc(100svh - 330px))"
+            : "min(280px, 72vw)",
+        } as React.CSSProperties
+      }
+    >
+      {SUPPORT_PROJECTS.projects.map((p) => (
+        <ProjectMirror key={p.name} project={p} />
+      ))}
+    </div>
+  );
+}
+
+function ProjectMirror({ project }: { project: SupportProject }) {
+  return (
+    <div className="flex flex-col items-center gap-7">
+      <div
+        className="relative aspect-square overflow-hidden rounded-full"
+        style={{
+          width: "var(--mirror)",
+          // The cover mirror's rims: deep green, then a pale green lip.
+          boxShadow: `0 0 0 10px ${TOKENS.mirrorRim}, 0 0 0 14px ${TOKENS.mirrorRimHi}, 0 30px 44px -18px rgb(63 10 38 / 0.45)`,
+        }}
+      >
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={project.image}
+          alt={project.name}
+          className="h-full w-full object-cover"
+          draggable={false}
+        />
+        {/* The glass's own glint: the two pale streaks on the cover's mirror. */}
         <span
           aria-hidden="true"
-          className="absolute left-1/2 top-[14%] size-[6px] -translate-x-1/2 rounded-full"
+          className="pointer-events-none absolute inset-0 rounded-full"
           style={{
-            background: TOKENS.bolt,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,.4)",
+            background:
+              "linear-gradient(125deg, transparent 22%, rgb(255 255 255 / 0.32) 27%, transparent 33%, transparent 40%, rgb(255 255 255 / 0.22) 44%, transparent 49%)",
+            boxShadow: "inset 0 0 0 1px rgb(255 255 255 / 0.4), inset 0 -18px 40px -20px rgb(0 60 30 / 0.35)",
           }}
         />
-        <span
-          aria-hidden="true"
-          className="absolute bottom-[14%] left-1/2 size-[6px] -translate-x-1/2 rounded-full"
-          style={{
-            background: TOKENS.bolt,
-            boxShadow: "inset 0 1px 0 rgba(255,255,255,.4)",
-          }}
-        />
-
-        {title ? (
-          <span
-            // font-sans, not the site's Fraunces display face: signage is set
-            // in a grotesque, never a high-contrast serif.
-            className="absolute inset-0 flex flex-col items-center justify-center whitespace-pre-line px-5 text-center font-sans font-extrabold uppercase leading-[1.15] tracking-[0.01em]"
-            style={{
-              color: s.ink,
-              fontSize: s.fontSize,
-              textShadow:
-                s.ink === "#FFFFFF" ? "0 1px 2px rgba(0,25,10,.4)" : "none",
-            }}
-          >
-            {title}
-          </span>
-        ) : null}
       </div>
+      <ButtonLink href={project.href} external={project.href !== "#"}>
+        {project.name}
+      </ButtonLink>
     </div>
   );
 }

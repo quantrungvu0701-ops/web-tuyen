@@ -57,30 +57,32 @@ function scrollToSection(href: string, event: MouseEvent<HTMLAnchorElement>) {
   smoother.scrollTo(target, true, `top ${clearance}px`);
 }
 
-// Sampled from the BFF logo.
-const BRAND_RED = "#E80808";
+// The KV's hot pink, deepened to carry white text at 4.5:1.
+const BRAND_PINK = "#E0115F";
 // Near-white, not the cream from the hero: the floating shell is frosted glass,
 // and a saturated tint reads as a solid slab at any alpha instead of letting
 // the section behind it show through.
-const BAND = "#FFFCF5";
+const BAND = "#FFF7EE";
 
 // Module constants, not inline literals: the navbar keys its scroll listener
 // off `links`, so a fresh array on every render would tear that listener down
 // and rebuild it continuously while scrolling.
 const LINKS: ScrollNavLink[] = [
-  { label: "Giới thiệu", href: "#about" },
-  { label: "Các sự kiện chính", href: "#su-kien" },
-  { label: "Tuyển cộng tác viên", href: "#tuyen" },
+  { label: "Giới thiệu", href: "#gioi-thieu" },
+  { label: "Sự kiện", href: "#su-kien" },
+  { label: "Lời nhắn gửi", href: "#loi-nhan" },
+  { label: "Nhân vật", href: "#nhan-vat" },
+  { label: "Hành trình", href: "#hanh-trinh" },
 ];
 
 const THEME: MorphingScrollNavbarTheme = {
-  accent: BRAND_RED,
-  accentSoft: "#FF7A45",
+  accent: BRAND_PINK,
+  accentSoft: "#FF8BA4",
   paper: BAND,
-  surface: "#FFFCF5",
-  ink: "#241F1C",
-  muted: "#6B5A44",
-  line: "rgba(36, 31, 28, 0.14)",
+  surface: "#FFFFFF",
+  ink: "#3F0A26",
+  muted: "#8A3A5E",
+  line: "rgba(63, 10, 38, 0.14)",
 };
 
 export default function SiteNav() {
@@ -91,17 +93,24 @@ export default function SiteNav() {
       links={LINKS}
       onLinkClick={scrollToSection}
       brand={
-        <Image
-          src="/logo-bff.png"
-          alt="BFF — Hội Sinh viên trường ĐH Ngoại thương"
-          width={1902}
-          height={827}
-          className="h-9 w-auto"
-        />
+        // The cover's two institutional marks ride with BFF in the bar, so the
+        // hero can give its whole sky to the lettering.
+        <span className="flex items-center gap-2.5">
+          <Image
+            src="/logo-bff.png"
+            alt="BFF — Hội Sinh viên trường ĐH Ngoại thương"
+            width={1902}
+            height={827}
+            className="h-9 w-auto"
+          />
+          <span aria-hidden="true" className="h-7 w-px bg-[rgba(63,10,38,0.15)]" />
+          <Image src="/logo-ftu.webp" alt="Trường Đại học Ngoại thương" width={96} height={96} className="size-9" />
+          <Image src="/logo-hsvvn.webp" alt="Hội Sinh viên Việt Nam" width={96} height={96} className="size-9" />
+        </span>
       }
       actions={
         <a className="msn-button msn-cta" href="/don">
-          ĐIỀN ĐƠN NGAY
+          Ứng tuyển ngay
         </a>
       }
     />

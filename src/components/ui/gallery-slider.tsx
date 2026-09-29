@@ -7,7 +7,7 @@ import {
   type MutableRefObject,
   type ReactNode,
 } from "react";
-import { AnimatePresence, motion } from "framer-motion";
+import { motion } from "framer-motion";
 import {
   ProgressSlider,
   SliderContent,
@@ -38,13 +38,13 @@ export const IMAGES_PER_SLIDE = 3;
  * shares that same glass.
  */
 const TOKENS = {
-  title: "#241F1C",
-  body: "#6B5A44",
+  title: "#3F0A26",
+  body: "#8A3A5E",
   // Dots sit on the same pale glass as the box now, so they are dark ink at
   // low alpha rather than the white that showed up against the old dark pill.
-  dotIdle: "rgba(36, 31, 28, 0.26)",
-  dotTrack: "rgba(36, 31, 28, 0.16)",
-  dotFill: "#241F1C",
+  dotIdle: "#FFB8C6",
+  dotTrack: "#FFD9DF",
+  dotFill: "#E0115F",
 } as const;
 
 /**
@@ -91,6 +91,11 @@ const GEO = {
    * wider banner crop rather than getting letterboxed.
    */
   maxImageHeight: 256,
+  /**
+   * In `fill` mode the box takes all the room it is given and the photo grows
+   * into it: as wide as the box allows less this much of each neighbour.
+   */
+  fillPeek: 88,
 } as const;
 
 /**
@@ -106,9 +111,9 @@ const GEO = {
  * `pt-4` is GEO.gap; keep them in step.
  */
 const GLASS_CLASS =
-  "border border-[rgba(36,31,28,0.10)] bg-[rgba(255,252,245,0.74)] shadow-[0_14px_40px_-20px_rgba(36,31,28,0.35)] backdrop-blur-xl backdrop-saturate-150";
+  "bg-[#FFFBF6] ring-1 ring-[#FFD9DF] shadow-[0_30px_60px_-28px_rgba(63,10,38,0.42)]";
 
-const BOX_CLASS = `relative w-full rounded-[20px] pt-4 ${GLASS_CLASS}`;
+const BOX_CLASS = `relative w-full rounded-[28px] pt-4 ${GLASS_CLASS}`;
 
 const clamp01 = (n: number) => Math.max(0, Math.min(1, n));
 
@@ -125,11 +130,11 @@ type PanJump = { from: number; to: number; fromProgress: number };
 
 /* ------------------------------------------------------------ photo tile */
 
-function PhotoTile({ src, width }: { src: string; width: number }) {
+function PhotoTile({ src, width, height }: { src: string; width: number; height?: number }) {
   return (
     <div
-      className="h-full shrink-0 overflow-hidden bg-black/10"
-      style={{ width, borderRadius: GEO.imageRadius }}
+      className={`shrink-0 overflow-hidden bg-black/10 ${height ? "" : "h-full"}`}
+      style={{ width, height, borderRadius: GEO.imageRadius }}
     >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
@@ -147,24 +152,29 @@ function PhotoTile({ src, width }: { src: string; width: number }) {
  * apart. When the box is wider than `gap + image + gap` the surplus becomes
  * margin either side, and the neighbouring photos show through it.
  */
-function useTrackGeometry() {
+function useTrackGeometry(fill: boolean) {
   const windowRef = useRef<HTMLDivElement | null>(null);
   const [windowWidth, setWindowWidth] = useState(0);
+  const [windowHeight, setWindowHeight] = useState(0);
 
   useEffect(() => {
     const el = windowRef.current;
     if (!el) return;
-    const sync = () => setWindowWidth(el.clientWidth);
+    const sync = () => {
+      setWindowWidth(el.clientWidth);
+      setWindowHeight(el.clientHeight);
+    };
     sync();
     const ro = new ResizeObserver(sync);
     ro.observe(el);
     return () => ro.disconnect();
   }, []);
 
-  const imageWidth = Math.min(
-    GEO.maxImageWidth,
-    Math.max(0, windowWidth - GEO.gap * 2),
-  );
+  // Filling, the photo is a true 16:9 as tall as the room allows (and never
+  // wider than the box less a peek of each neighbour) — never a long banner.
+  const imageWidth = fill
+    ? Math.max(0, Math.min(windowWidth - (GEO.gap + GEO.fillPeek) * 2, (windowHeight * 16) / 9))
+    : Math.min(GEO.maxImageWidth, Math.max(0, windowWidth - GEO.gap * 2));
   // Whatever the box has spare goes either side of the photo, which both keeps
   // it centred and is exactly what lets the neighbours show through.
   const sidePad = Math.max(GEO.gap, (windowWidth - imageWidth) / 2);
@@ -174,9 +184,13 @@ function useTrackGeometry() {
     imageWidth,
     sidePad,
     pitch: imageWidth + GEO.gap,
-    height: imageWidth
-      ? Math.min((imageWidth * 9) / 16, GEO.maxImageHeight)
-      : undefined,
+    // Filling, the window is the box's leftover room (flex); the photo's own
+    // height is its 16:9.
+    height:
+      !fill && imageWidth
+        ? Math.min((imageWidth * 9) / 16, GEO.maxImageHeight)
+        : undefined,
+    tileHeight: fill && imageWidth ? (imageWidth * 9) / 16 : undefined,
   };
 }
 
@@ -196,13 +210,15 @@ function PhotoTrack({
   slides,
   panRef,
   posRef,
+  fill,
 }: {
   slides: GallerySlide[];
   panRef: MutableRefObject<PanJump | null>;
   posRef: MutableRefObject<number>;
+  fill: boolean;
 }) {
   const { active, progress } = useProgressSliderContext();
-  const { windowRef, imageWidth, sidePad, pitch, height } = useTrackGeometry();
+  const { windowRef, imageWidth, sidePad, pitch, height, tileHeight } = useTrackGeometry(fill);
 
   const activeIndex = Math.max(
     0,
@@ -258,11 +274,17 @@ function PhotoTrack({
   return (
     <div
       ref={windowRef}
-      className="relative w-full overflow-hidden"
+      // Filling, the neighbours show wider, so they fade out towards the box's
+      // edges instead of being cut off there on a hard line.
+      className={`relative w-full overflow-hidden ${
+        fill
+          ? "min-h-0 flex-1 [mask-image:linear-gradient(90deg,transparent,black_12%,black_88%,transparent)]"
+          : ""
+      }`}
       style={{ height }}
     >
       <div
-        className="absolute inset-y-0 left-0 flex will-change-transform"
+        className="absolute inset-y-0 left-0 flex items-center will-change-transform"
         style={{
           gap: GEO.gap,
           paddingLeft: sidePad,
@@ -272,7 +294,7 @@ function PhotoTrack({
         }}
       >
         {strip.map((src, n) => (
-          <PhotoTile key={n} src={src} width={imageWidth} />
+          <PhotoTile key={n} src={src} width={imageWidth} height={tileHeight} />
         ))}
       </div>
     </div>
@@ -296,22 +318,28 @@ function CopySlide({
   children: ReactNode;
 }) {
   const { active } = useProgressSliderContext();
+  const on = active === value;
 
+  // Every slide stays mounted, stacked in one grid cell, so the cell is as
+  // tall as the longest description and nothing below it ever jumps. Only
+  // the active one is visible and exposed to assistive tech.
   return (
-    <AnimatePresence initial={false}>
-      {active === value && (
-        <motion.div
-          key={value}
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: -8 }}
-          transition={{ duration: durationS, ease: [0.33, 0, 0.2, 1] }}
-          className="absolute inset-0"
-        >
-          {children}
-        </motion.div>
-      )}
-    </AnimatePresence>
+    <motion.div
+      initial={false}
+      animate={{ opacity: on ? 1 : 0, y: on ? 0 : -8 }}
+      // Out fast, in after it: two justified paragraphs cross-fading on top
+      // of each other read as a smear, so they never share the cell.
+      transition={
+        on
+          ? { duration: durationS * 0.6, delay: durationS * 0.3, ease: [0.16, 1, 0.3, 1] }
+          : { duration: durationS * 0.3, ease: [0.4, 0, 1, 1] }
+      }
+      className="[grid-area:1/1]"
+      style={{ pointerEvents: on ? "auto" : "none" }}
+      aria-hidden={!on}
+    >
+      {children}
+    </motion.div>
   );
 }
 
@@ -367,7 +395,7 @@ function GalleryDots({
               aria-valuenow={isActive ? Math.round(progress) : undefined}
               aria-valuemin={isActive ? 0 : undefined}
               aria-valuemax={isActive ? 100 : undefined}
-              className="relative block h-[7px] overflow-hidden rounded-full transition-[width,background-color] duration-500 ease-out group-hover:brightness-75 group-focus-visible:ring-2 group-focus-visible:ring-[#241F1C]"
+              className="relative block h-[7px] overflow-hidden rounded-full transition-[width,background-color] duration-500 ease-out group-hover:brightness-75 group-focus-visible:ring-2 group-focus-visible:ring-[#E0115F]"
               style={{
                 width: isActive ? 38 : 7,
                 backgroundColor: isActive ? TOKENS.dotTrack : TOKENS.dotIdle,
@@ -397,11 +425,14 @@ export default function GallerySlider({
   label,
   fastMs = TIMING.fastMs,
   copyMorphS = TIMING.copyMorphS,
+  fill = false,
 }: {
   slides: GallerySlide[];
   label: string;
   fastMs?: number;
   copyMorphS?: number;
+  /** Take the full height of the parent and grow the photo to fill it. */
+  fill?: boolean;
 }) {
   const panRef = useRef<PanJump | null>(null);
   const posRef = useRef(0);
@@ -413,7 +444,10 @@ export default function GallerySlider({
     // box's width only decides how much of the neighbouring photos shows
     // beside it. Bottom padding is the room the dots bar hangs into.
     <div
-      className="mx-auto w-full max-w-6xl pb-16"
+      className={`mx-auto w-full ${fill ? "flex h-full flex-col" : "max-w-6xl pb-16"}`}
+      // The dots bar hangs into this: 56px when filling (inline, so it can't
+      // go missing from the stylesheet and let the box run under the fold).
+      style={fill ? { paddingBottom: 104 } : undefined}
       aria-roledescription="carousel"
       aria-label={label}
     >
@@ -427,28 +461,25 @@ export default function GallerySlider({
         activeSlider={slides[0].id}
         duration={SLIDE_MS}
         fastDuration={fastMs}
-        className={BOX_CLASS}
+        className={fill ? `${BOX_CLASS} flex min-h-0 flex-1 flex-col` : BOX_CLASS}
       >
-        <PhotoTrack slides={slides} panRef={panRef} posRef={posRef} />
+        <PhotoTrack slides={slides} panRef={panRef} posRef={posRef} fill={fill} />
 
-        {/* Relative + min-height: the copy blocks stack on one another so they
-            can cross over, and the box holds steady while they do. Each
-            CopySlide is absolutely positioned, so this min-height is the
-            ONLY thing that gives the copy room — it has to fit the real
-            copy (3-5 lines), not just the placeholder's one line, or a
-            longer slide overflows into the dots bar below. */}
-        <SliderContent className="relative min-h-48">
+        {/* One grid cell holding every slide's copy: the box sizes itself to
+            the longest description, so real copy of any length can never
+            spill into the dots bar below. */}
+        <SliderContent className="grid shrink-0">
           {slides.map((slide) => (
             <CopySlide key={slide.id} value={slide.id} durationS={copyMorphS}>
-              <div style={{ padding: GEO.gap }}>
+              <div className="px-5 pb-5 pt-4 sm:px-7">
                 <h4
-                  className="mb-1.5 text-lg font-bold tracking-tight sm:text-xl"
+                  className={`mb-1.5 font-display ${fill ? "text-[1.2rem]" : "text-xl sm:text-2xl"}`}
                   style={{ color: TOKENS.title }}
                 >
                   {slide.title}
                 </h4>
                 <p
-                  className="max-w-2xl text-sm leading-relaxed sm:text-[15px]"
+                  className={`text-justify leading-[1.8] ${fill ? "text-[14.5px]" : "text-[15px] sm:text-[16.5px]"}`}
                   style={{ color: TOKENS.body }}
                 >
                   {slide.description}

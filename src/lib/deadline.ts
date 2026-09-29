@@ -1,13 +1,13 @@
 /**
  * The single moment recruitment closes.
  *
- * TODO(deadline): replace with the real closing date and time.
+ * Vòng đơn runs 01/10 – 20/10 (per the Thế hệ 24 key visual).
  *
  * Both the hero countdown and the đơn page read this. They must agree — a
  * countdown still showing time left on a form that has already stopped
  * accepting answers is the kind of thing applicants take personally.
  */
-export const DEADLINE = new Date("2026-10-15T23:59:59+07:00");
+export const DEADLINE = new Date("2026-10-20T23:59:59+07:00");
 
 export function isClosed(now: number = Date.now()): boolean {
   return now >= DEADLINE.getTime();

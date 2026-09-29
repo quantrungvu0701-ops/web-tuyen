@@ -2,6 +2,8 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, useReducedMotion } from "framer-motion";
+import { ROUNDS } from "@/lib/site";
+import { SectionHead } from "@/components/v24/ui";
 
 /* ------------------------------------------------------------------ design
  * Five polaroids scattered either side of a road that winds across the
@@ -15,13 +17,14 @@ import { motion, useReducedMotion } from "framer-motion";
  */
 
 const TOKENS = {
-  sectionBg: "#FEF6E6",
-  accent: "#E80808",
-  heading: "#241F1C",
-  body: "#6B5A44",
-  asphalt: "#4A4340",
-  asphaltEdge: "#332E2C",
-  centreLine: "#F7EFDD",
+  accent: "#E0115F",
+  heading: "#3F0A26",
+  body: "#8A3A5E",
+  // The cover's own road: pink tarmac, a deeper pink kerb, butter dashes.
+  asphalt: "#FF9FB4",
+  asphaltEdge: "#F0708F",
+  centreLine: "#FFF3B8",
+  stake: "#F0708F",
   polaroid: "#FFFDF8",
 } as const;
 
@@ -30,7 +33,7 @@ const TOKENS = {
 const DESIGN_W = 1120;
 const DESIGN_H = 660;
 
-const MASCOT = 96;
+const MASCOT = 104;
 const POLA_W = 196;
 const POLA_H = 206;
 /** Clear air between the road's centre line and the nearest polaroid edge. */
@@ -48,25 +51,13 @@ const STOPS = [0.04, 0.27, 0.5, 0.73, 0.96];
 
 type Step = { name: string; date: string; image: string };
 
-/**
- * TODO(copy): real dates — the user fills these.
- * TODO(images): real photo per round; these cycle the gallery placeholders.
- */
-const STEPS: Step[] = [
-  { name: "Vòng đơn", date: "[NGÀY] – [NGÀY]", image: "/gallery/p1.jpg" },
-  {
-    name: "Vòng phỏng vấn định hướng",
-    date: "[NGÀY] – [NGÀY]",
-    image: "/gallery/p2.jpg",
-  },
-  { name: "Vòng teamwork", date: "[NGÀY] – [NGÀY]", image: "/gallery/p3.png" },
-  {
-    name: "Vòng phỏng vấn cá nhân",
-    date: "[NGÀY] – [NGÀY]",
-    image: "/gallery/p4.webp",
-  },
-  { name: "Vòng hội nhập", date: "[NGÀY] – [NGÀY]", image: "/gallery/p1.jpg" },
-];
+/** TODO(images): a real photo per round; these cycle the gallery placeholders. */
+const PHOTOS = ["/gallery/p1.jpg", "/gallery/p2.jpg", "/gallery/p3.png", "/gallery/p4.webp"];
+const STEPS: Step[] = ROUNDS.map((r, i) => ({
+  name: r.name,
+  date: r.date,
+  image: r.photo ?? PHOTOS[i % PHOTOS.length],
+}));
 
 /** A scattered-collage tilt, fixed per index so it never reshuffles. */
 const TILT = [-3.2, 2.4, -1.8, 3.1, -2.6];
@@ -114,24 +105,13 @@ export default function RecruitTimeline() {
   const activePoint = points[active];
 
   return (
-    <section
-      id="hanh-trinh"
-      className="w-full"
-      style={{ backgroundColor: TOKENS.sectionBg }}
-    >
-      <div className="mx-auto max-w-7xl px-6 py-24 lg:px-10">
-        <h2
-          className="text-center text-3xl font-bold uppercase tracking-wide sm:text-4xl"
-          style={{ color: TOKENS.heading }}
-        >
-          Hành trình ứng tuyển
-        </h2>
-        <p
-          className="mx-auto mt-3 max-w-xl text-center text-sm sm:text-base"
-          style={{ color: TOKENS.body }}
-        >
-          Di chuyển hoặc chạm vào từng mốc để xem chi tiết.
-        </p>
+    <section id="hanh-trinh" className="w-full bg-cream">
+      <div className="mx-auto max-w-7xl px-6 py-28 lg:px-10 lg:py-36">
+        <SectionHead
+          tone="ink"
+          title="Hành trình ứng tuyển"
+          lead="Năm chặng đường, một điểm đến: BFF. Chạm vào từng mốc để Bi dẫn em đi."
+        />
 
         {/* justify-center + origin top-center keeps the board centred at any
             scale; the layout box stays DESIGN_W wide whatever the transform
@@ -197,7 +177,7 @@ export default function RecruitTimeline() {
                     y1={p.y}
                     x2={p.x}
                     y2={y2}
-                    stroke={TOKENS.asphaltEdge}
+                    stroke={TOKENS.stake}
                     strokeWidth={2}
                     strokeDasharray="5 5"
                     opacity={active === i ? 0.75 : 0.3}
@@ -257,18 +237,25 @@ export default function RecruitTimeline() {
                         photographs are unlabelled — see checklist item 11. */}
                     <div className="px-0.5 py-3">
                       <div
-                        className="text-[10px] font-semibold uppercase tracking-[0.08em]"
+                        className="font-display text-[15px] leading-tight transition-colors duration-300"
                         style={{
-                          color: isActive ? TOKENS.accent : TOKENS.body,
+                          color: isActive ? TOKENS.accent : TOKENS.heading,
                         }}
                       >
                         {step.name}
                       </div>
+                      {/* PS Bolden only for real dates: it has no en dash (a
+                          hyphen is its own) and no Vietnamese, so a placeholder
+                          like "[Ngày]" falls back to the body face. */}
                       <div
-                        className="mt-1 text-[13px] font-bold"
-                        style={{ color: TOKENS.heading }}
+                        className={`mt-1.5 leading-none ${
+                          /^[\d/\s–-]+$/.test(step.date)
+                            ? "font-sign text-[19px] tracking-wide"
+                            : "text-[13px] font-semibold"
+                        }`}
+                        style={{ color: TOKENS.body }}
                       >
-                        {step.date}
+                        {step.date.replace("–", "-")}
                       </div>
                     </div>
                   </button>
@@ -302,7 +289,7 @@ export default function RecruitTimeline() {
             {/* ----------------------------------------------------- mascot */}
             {activePoint && (
               <motion.img
-                src="/loading-bi.png"
+                src="/kv/bi.webp"
                 alt=""
                 aria-hidden="true"
                 width={MASCOT}
@@ -313,7 +300,9 @@ export default function RecruitTimeline() {
                 animate={{
                   x: activePoint.x - MASCOT / 2,
                   // Stands on the road rather than centred on it.
-                  y: activePoint.y - MASCOT - 16,
+                  // Feet on the tarmac: Bi stands in the road rather than above
+                  // it, which keeps his head clear of the polaroid overhead.
+                  y: activePoint.y - MASCOT * 0.78,
                 }}
                 transition={
                   reduceMotion
