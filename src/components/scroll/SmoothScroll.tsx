@@ -55,6 +55,16 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
       // otherwise jolts pinned sections mid-scroll.
       ignoreMobileResize: true,
     });
+    smoother.scrollTop(0);
+
+    // Coming back to the tab through the browser's Back button restores the
+    // page from memory, scroll position and all: start it at the top again.
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      window.scrollTo(0, 0);
+      smoother.scrollTop(0);
+    };
+    window.addEventListener("pageshow", onPageShow);
 
     // Every in-page "#section" link glides through the smoother instead of
     // jumping — one delegated listener rather than a handler on each button.
@@ -77,6 +87,7 @@ export default function SmoothScroll({ children }: { children: ReactNode }) {
     // smoother" would kill the second instance instead of its own.
     return () => {
       document.removeEventListener("click", onClick);
+      window.removeEventListener("pageshow", onPageShow);
       smoother.kill();
     };
   });

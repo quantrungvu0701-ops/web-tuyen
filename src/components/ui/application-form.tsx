@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { CONTACT } from "@/lib/site";
@@ -211,11 +211,26 @@ export default function ApplicationForm() {
 
   const restore = useCallback(
     (draft: { answers: Answers; step: number }) => {
+      // The answers come back; the form itself always opens on its first
+      // page, and the reader moves on from there.
       setAnswers(draft.answers);
-      setStep(draft.step);
     },
     [],
   );
+
+  // Every visit starts at the top of the first page: on load, on reload, and
+  // when the tab is brought back from the browser's Back/Forward memory.
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) window.history.scrollRestoration = "manual";
+    window.scrollTo(0, 0);
+    const onPageShow = (e: PageTransitionEvent) => {
+      if (!e.persisted) return;
+      setStep(0);
+      window.scrollTo(0, 0);
+    };
+    window.addEventListener("pageshow", onPageShow);
+    return () => window.removeEventListener("pageshow", onPageShow);
+  }, []);
   const draft = useFormDraft(answers, step, restore);
 
   const steps = useMemo(() => buildSteps(answers), [answers]);
