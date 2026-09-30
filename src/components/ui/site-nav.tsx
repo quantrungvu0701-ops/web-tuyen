@@ -73,6 +73,7 @@ const LINKS: ScrollNavLink[] = [
   { label: "Lời nhắn gửi", href: "#loi-nhan" },
   { label: "Nhân vật", href: "#nhan-vat" },
   { label: "Hành trình", href: "#hanh-trinh" },
+  { label: "MV", href: "#mv" },
 ];
 
 const THEME: MorphingScrollNavbarTheme = {

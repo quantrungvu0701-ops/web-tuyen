@@ -247,8 +247,19 @@ export default function PoleGallerySection() {
           // When scrolling stops inside the section, the page finishes the
           // turn in the direction it was heading, through the smoother (GSAP's
           // own `snap` fights ScrollSmoother and throws the page to the top).
+          // Only the reader's own scrolling snaps. A nav-link jump glides
+          // through this section on its way elsewhere; snapping that would
+          // strand it on a sign here.
+          let lastInput = 0;
+          const markInput = () => {
+            lastInput = performance.now();
+          };
+          const inputs = ["wheel", "touchmove", "keydown"] as const;
+          inputs.forEach((t) => window.addEventListener(t, markInput, { passive: true }));
+
           const onScrollEnd = () => {
             if (!SNAP_STEPS) return;
+            if (performance.now() - lastInput > 1200) return;
             const p = st.progress;
             if (p <= 0 || p >= 1) return;
             const steps = N - 1;
@@ -264,6 +275,7 @@ export default function PoleGallerySection() {
 
           return () => {
             ScrollTrigger.removeEventListener("scrollEnd", onScrollEnd);
+            inputs.forEach((t) => window.removeEventListener(t, markInput));
             st.kill();
             window.removeEventListener("resize", fit);
           };
