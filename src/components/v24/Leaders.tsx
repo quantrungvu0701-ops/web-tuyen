@@ -3,6 +3,7 @@
 /* eslint-disable @next/next/no-img-element */
 import { useState } from "react";
 import { APPLY_HREF, LEADERS } from "@/lib/site";
+import Decor from "./Decor";
 import { ArrowRight, ButtonLink, SectionHead } from "./ui";
 
 /**
@@ -15,15 +16,23 @@ export default function Leaders() {
   const leader = LEADERS[active];
 
   return (
-    <section id="loi-nhan" className="relative bg-cream py-28 lg:py-36">
-      <div className="mx-auto max-w-6xl px-6 lg:px-10">
+    <section id="loi-nhan" className="relative pb-[82px] pt-28 lg:pb-[114px] lg:pt-36">
+      <Decor src="/kv/cloud-2.webp" className="-left-16 top-6 hidden w-72 opacity-90 lg:block" dur="30s" />
+      <Decor src="/kv/car.webp" anim="hop" flip className="-bottom-[110px] right-[12%] hidden w-42 lg:block xl:w-48" />
+      <div className="mx-auto max-w-7xl px-6 lg:px-10">
         <SectionHead
           tone="ink"
           title="Lời nhắn gửi"
-          lead="Chọn một anh chị làm bạn đồng hành — nghe lời nhắn, rồi cùng nhau đi tới lá đơn nhé!"
+          lead={
+            <>
+              Cùng xem những người bạn đồng hành gửi gắm gì tới em
+              <br />
+              trong hành trình ứng tuyển nhé!
+            </>
+          }
         />
 
-        <div className="mt-16 grid items-start gap-10 lg:grid-cols-[1.1fr_1fr] lg:gap-14">
+        <div className="mt-16 grid items-start gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           {/* ------------------------------------------------ the lineup */}
           <ul
             className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:pb-0"
@@ -58,9 +67,6 @@ export default function Leaders() {
                       <span className="block truncate font-display text-[1.02rem] leading-tight text-plum-900">
                         {l.name}
                       </span>
-                      <span className="mt-0.5 block truncate text-[0.8rem] font-medium text-plum-500">
-                        {l.role}
-                      </span>
                     </span>
                   </button>
                 </li>
@@ -92,7 +98,6 @@ export default function Leaders() {
               </span>
               <span>
                 <span className="block font-display text-xl leading-tight">{leader.name}</span>
-                <span className="block text-sm text-white/80">{leader.role}</span>
               </span>
             </figcaption>
             <ButtonLink
@@ -100,7 +105,7 @@ export default function Leaders() {
               variant="secondary"
               className="mt-8 w-full !text-pink-700 sm:w-auto"
             >
-              Cùng anh chị điền đơn
+              Điền đơn ngay
               <ArrowRight />
             </ButtonLink>
           </figure>

@@ -1,5 +1,6 @@
 /**
- * The application form, transcribed from the 2025 Wix form's own schema.
+ * The application form. Question text follows the official 2026 question bank
+ * (Google Sheet "BỘ CÂU HỎI VÒNG ĐƠN", tab FINAL) word for word.
  *
  * Structure notes worth keeping:
  *  - A Ban's question set can only ever be answered once. "Em muốn ứng tuyển
@@ -12,7 +13,8 @@
  *    answer typed into a one-line box is miserable.
  */
 
-export const SCHEMA_VERSION = 1;
+// 2: the 2026 question bank. Drafts saved against the old questions are dropped.
+export const SCHEMA_VERSION = 2;
 export const DRAFT_KEY = `hsvftu-don-draft-v${SCHEMA_VERSION}`;
 
 export const BAN_TO_CHUC = "Ban Tổ chức";
@@ -24,14 +26,7 @@ export const ALL_BAN = [BAN_TO_CHUC, BAN_TRUYEN_THONG, BAN_DOI_NGOAI] as const;
 export type Ban = (typeof ALL_BAN)[number];
 
 export type FieldType =
-  | "text"
-  | "longtext"
-  | "email"
-  | "tel"
-  | "url"
-  | "date"
-  | "radio"
-  | "checkbox";
+  "text" | "longtext" | "email" | "tel" | "url" | "date" | "radio" | "checkbox";
 
 export type Field = {
   name: string;
@@ -41,6 +36,8 @@ export type Field = {
   required: boolean;
   options?: readonly string[];
   placeholder?: string;
+  /** A short line under the question. Not part of the Sheet's column header. */
+  note?: string;
 };
 
 export type Answers = Record<string, string | string[]>;
@@ -70,7 +67,12 @@ export const COMMON_FIELDS: readonly Field[] = [
     placeholder: "VD: Anh 01 - Kinh tế đối ngoại - K65",
   },
   { name: "email", label: "Email", type: "email", required: true },
-  { name: "so_dien_thoai", label: "Số điện thoại", type: "tel", required: true },
+  {
+    name: "so_dien_thoai",
+    label: "Số điện thoại",
+    type: "tel",
+    required: true,
+  },
   {
     name: "link_facebook",
     label: "Link Facebook",
@@ -94,25 +96,26 @@ export const COMMON_FIELDS: readonly Field[] = [
     name: "thanh_tich",
     label: "Thành tích, giải thưởng mà em đã đạt được? (nếu có)",
     type: "longtext",
-    required: true,
+    required: false,
   },
   {
     name: "mot_tu_ve_ban_than",
     label:
-      "Hãy dùng 1 từ để anh chị hiểu rõ nhất về bản thân em (giải thích vì sao)",
+      "Hãy dùng 1 từ để anh chị hiểu rõ nhất về bản thân em và giải thích vì sao em lựa chọn từ đó?",
     type: "longtext",
     required: true,
   },
   {
     name: "thanh_tuu_ca_nhan",
     label:
-      "Em hãy kể về một thành tựu cá nhân mà em cảm thấy tự hào và tâm đắc nhất? (giải thích vì sao)",
+      "Em hãy kể về một thành tựu cá nhân mà em cảm thấy tự hào và tâm đắc nhất? Vì sao?",
     type: "longtext",
     required: true,
   },
   {
     name: "nguyen_vong_1",
-    label: "Em ứng tuyển vào Ban nào",
+    label: "Chọn ban em muốn ứng tuyển",
+    note: "Lưu ý: Mỗi ứng viên được chọn tối đa 02 ban",
     type: "radio",
     required: true,
     options: ALL_BAN,
@@ -125,28 +128,28 @@ const BTC_FIELDS: readonly Field[] = [
   {
     name: "btc_q1",
     label:
-      "Em nghĩ công việc của Ban Tổ chức Hội Sinh viên bao gồm những gì, và em phù hợp với những công việc ấy như thế nào?",
+      'Theo em, công việc của Ban Tổ chức Hội Sinh viên bao gồm những gì? Trong đó, phần việc nào khiến em háo hức nhất, và phần nào khiến em thấy hơi "ngại"? Vì sao?',
     type: "longtext",
     required: true,
   },
   {
     name: "btc_q2",
     label:
-      'Theo em, đâu là thước đo để đánh giá một sự kiện là "được tổ chức chuyên nghiệp"?',
+      "Nghĩ về một sự kiện em từng tham dự, có thể do bất kì đơn vị nào tổ chức. Em hãy chỉ ra một chi tiết mà Ban Tổ chức sự kiện đó làm tốt, hoặc chưa tốt, mà người tham dự bình thường có thể không để ý.",
     type: "longtext",
     required: true,
   },
   {
     name: "btc_q3",
     label:
-      "Nếu được giao một công việc mà em chưa từng biết đến, hoặc chưa từng làm qua, em sẽ lựa chọn tự mình khám phá, tìm tòi, hay sẽ tham khảo những người đi trước để biết cách giải quyết? Vì sao?",
+      "Em phụ trách điều phối MC chính của một chương trình diễn ra trong 20 phút nữa, nhưng MC thông tin gấp rằng có thể sẽ đến muộn hơn thời gian bắt đầu. Trưởng ban của em đang tiếp khách mời và không hỗ trợ xử lý được ngay lập tức. Em sẽ làm gì trong 5 phút tiếp theo?",
     type: "longtext",
     required: true,
   },
   {
     name: "btc_q4",
     label:
-      "Nếu được chọn một bài hát để miêu tả những kỳ vọng của em về môi trường Đại học, em sẽ lựa chọn bài hát nào? Vì sao?",
+      "Nếu 4 năm Đại học của em có một bài hát chủ đề (theme song), em mong đó sẽ là bài hát nào? Vì sao?",
     type: "longtext",
     required: true,
   },
@@ -162,7 +165,7 @@ const BTT_FIELDS: readonly Field[] = [
   },
   {
     name: "btt_ky_nang",
-    label: "Em đã có những kỹ năng truyền thông nào sau đây?",
+    label: "Em có những kỹ năng truyền thông nào sau đây?",
     type: "checkbox",
     required: true,
     options: ["Viết lách", "Chụp ảnh", "Thiết kế"],
@@ -170,14 +173,21 @@ const BTT_FIELDS: readonly Field[] = [
   {
     name: "btt_q3",
     label:
-      "Nếu em yêu thích công việc sáng tạo nội dung, nhiếp ảnh, quay phim, thiết kế hay mỹ thuật, hãy chia sẻ cho anh chị sản phẩm của em nhé? Nhớ là càng chi tiết càng tốt nhé!",
+      "Nếu em đã từng tham gia vào các hoạt động sáng tạo (viết nội dung, chụp ảnh, quay dựng, thiết kế hay mỹ thuật), hãy chia sẻ với anh chị sản phẩm của em nhé!",
     type: "longtext",
     required: true,
   },
   {
     name: "btt_q4",
     label:
-      "Theo em, chiến dịch truyền thông nào gần đây được xem là thành công và để lại cho em nhiều ấn tượng? Chia sẻ thêm với anh chị về chiến dịch đó và lý do em ấn tượng với nó nha.",
+      "Em hay dùng thiết bị nào để thực hiện ấn phẩm, hoạt động sáng tạo của mình? Hãy chia sẻ với anh chị nhé (ví dụ: máy ảnh Canon EOS R50, laptop, tripod, gimbal, DJI Osmo Pocket 3,…)",
+    type: "longtext",
+    required: true,
+  },
+  {
+    name: "btt_q5",
+    label:
+      "Nếu em phải kể về Ban Truyền thông cho một người chưa từng biết Hội Sinh viên bằng đúng 3 từ, em sẽ chọn 3 từ nào? Vì sao?",
     type: "longtext",
     required: true,
   },
@@ -187,14 +197,14 @@ const BDN_FIELDS: readonly Field[] = [
   {
     name: "bdn_q1",
     label:
-      "Theo em, công việc của Ban Đối ngoại ở trong 1 chương trình là gì? Em hãy đánh giá mức độ phù hợp của bản thân với những công việc đó.",
+      "Theo em, công việc của Ban Đối ngoại ở trong một chương trình là gì? Em hãy đánh giá mức độ phù hợp của bản thân với những công việc đó",
     type: "longtext",
     required: true,
   },
   {
     name: "bdn_q2",
     label:
-      "Em mong muốn được học hỏi và phát triển những kỹ năng nào nhất khi lựa chọn tham gia vào Ban Đối ngoại?",
+      "Em mong muốn được học hỏi và phát triển những kỹ năng nào khi lựa chọn tham gia vào Ban Đối ngoại?",
     type: "longtext",
     required: true,
   },
@@ -208,7 +218,7 @@ const BDN_FIELDS: readonly Field[] = [
   {
     name: "bdn_q4",
     label:
-      'Em hãy kể ra các lĩnh vực Nhà tài trợ phù hợp với Chương trình "Duyên dáng Ngoại thương - Beauty & Charm"',
+      "Nếu được phân công tìm kiếm nhà tài trợ cho một sự kiện sinh viên cấp trường, em sẽ tiến hành các bước nghiên cứu và lọc danh sách doanh nghiệp tiềm năng ra sao?",
     type: "longtext",
     required: true,
   },
@@ -234,7 +244,7 @@ const LOI_NHAN_FIELD: Field = {
 export function nguyenVong2Field(nv1: Ban): Field {
   return {
     name: NGUYEN_VONG_2,
-    label: "Em muốn ứng tuyển vào Ban nào khác không",
+    label: "Em có muốn ứng tuyển vào ban nào khác không?",
     type: "radio",
     required: true,
     options: [...ALL_BAN.filter((b) => b !== nv1), KHONG],
@@ -288,7 +298,6 @@ export function buildSteps(answers: Answers): Step[] {
   if (nv2) {
     steps.push({
       title: "Lời nhắn",
-      hint: "Phần này không bắt buộc.",
       fields: [LOI_NHAN_FIELD],
       terminal: true,
     });
@@ -326,7 +335,10 @@ export function missingOn(step: Step, answers: Answers): string[] {
 }
 
 /** `2026-10-15` reads as `15/10/2026` in the Sheet, as Vietnamese dates do. */
-function formatValue(field: Field, value: string | string[] | undefined): string {
+function formatValue(
+  field: Field,
+  value: string | string[] | undefined,
+): string {
   if (Array.isArray(value)) return value.join(", ");
   if (!value) return "";
   if (field.type === "date") {

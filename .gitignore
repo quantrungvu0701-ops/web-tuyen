@@ -49,3 +49,6 @@ next-env.d.ts
 # downloaded binaries that don't belong in the site repo.
 .claude/skills/
 .agents/
+
+# Original photos (70MB+); the site ships compressed copies from public/.
+/assets/source/ẢNH WEB/

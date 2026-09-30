@@ -39,7 +39,7 @@ const PINNED_SECTIONS = new Set(["#su-kien"]);
  * SmoothScroll.tsx), so the link still works either way.
  */
 function scrollToSection(href: string, event: MouseEvent<HTMLAnchorElement>) {
-  if (!href.startsWith("#")) return; // real pages ("/don") navigate as normal
+  if (!href.startsWith("#")) return; // real pages ("/dondangky") navigate as normal
 
   const target = document.querySelector(href);
   if (!target) return;
@@ -96,6 +96,9 @@ export default function SiteNav() {
         // The cover's two institutional marks ride with BFF in the bar, so the
         // hero can give its whole sky to the lettering.
         <span className="flex items-center gap-2.5">
+          <Image src="/logo-ftu.webp" alt="Trường Đại học Ngoại thương" width={96} height={96} className="size-9" />
+          <Image src="/logo-hsvvn.webp" alt="Hội Sinh viên Việt Nam" width={96} height={96} className="size-9" />
+          <span aria-hidden="true" className="h-7 w-px bg-[rgba(63,10,38,0.15)]" />
           <Image
             src="/logo-bff.png"
             alt="BFF — Hội Sinh viên trường ĐH Ngoại thương"
@@ -103,14 +106,11 @@ export default function SiteNav() {
             height={827}
             className="h-9 w-auto"
           />
-          <span aria-hidden="true" className="h-7 w-px bg-[rgba(63,10,38,0.15)]" />
-          <Image src="/logo-ftu.webp" alt="Trường Đại học Ngoại thương" width={96} height={96} className="size-9" />
-          <Image src="/logo-hsvvn.webp" alt="Hội Sinh viên Việt Nam" width={96} height={96} className="size-9" />
         </span>
       }
       actions={
-        <a className="msn-button msn-cta" href="/don">
-          Ứng tuyển ngay
+        <a className="msn-button msn-cta" href="/dondangky">
+          Điền đơn ngay
         </a>
       }
     />

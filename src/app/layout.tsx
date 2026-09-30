@@ -1,6 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import localFont from "next/font/local";
-import { Be_Vietnam_Pro } from "next/font/google";
+import { Be_Vietnam_Pro, Patrick_Hand } from "next/font/google";
 import "./globals.css";
 
 /**
@@ -44,6 +44,14 @@ const body = Be_Vietnam_Pro({
   display: "swap",
 });
 
+// A felt-tip hand for the notes scribbled beside the journey's polaroids.
+const hand = Patrick_Hand({
+  variable: "--font-patrick-hand",
+  subsets: ["latin", "vietnamese"],
+  weight: "400",
+  display: "swap",
+});
+
 /**
  * Absolute base for the share image. Vercel sets its production domain at
  * build time; NEXT_PUBLIC_SITE_URL overrides it once a custom domain exists.
@@ -77,7 +85,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="vi"
-      className={`${display.variable} ${accent.variable} ${sign.variable} ${body.variable} h-full antialiased`}
+      className={`${display.variable} ${accent.variable} ${sign.variable} ${body.variable} ${hand.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col font-sans">{children}</body>
     </html>

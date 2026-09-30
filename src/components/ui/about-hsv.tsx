@@ -71,7 +71,7 @@ export default function AboutHsv() {
                 <br />
                 đại diện cho ngôi nhà chung BFF &quot;Big Fat Family&quot;
                 <br />
-                với 3 Ban và 2 Câu lạc bộ trực thuộc.
+                với 3 Ban chức năng và 2 Câu lạc bộ trực thuộc.
               </p>
             </div>
           </div>

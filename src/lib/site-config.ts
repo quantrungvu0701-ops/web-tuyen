@@ -48,7 +48,7 @@ export const about = {
   label: "About us",
   paragraphs: [
     "Hội Sinh viên trường Đại học Ngoại thương được thành lập ngày 15 tháng 03 năm 2003, là một tổ chức Chính trị - Xã hội trực thuộc Hội Sinh viên Việt Nam.",
-    "Hội Sinh viên trường Đại học Ngoại thương là tổ chức đại diện cho ngôi nhà chung BFF – Big Fat Family – với 3 Ban và 2 Câu lạc bộ trực thuộc.",
+    "Hội Sinh viên trường Đại học Ngoại thương là tổ chức đại diện cho ngôi nhà chung BFF – Big Fat Family – với 3 Ban chức năng và 2 Câu lạc bộ trực thuộc.",
   ],
   // TODO: replace with a real photo of the Hội (public/about.jpg).
   imageSrc: "/about.jpg",

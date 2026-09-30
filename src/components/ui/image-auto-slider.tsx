@@ -1,6 +1,9 @@
 "use client";
 
 export type AutoSliderImage = { src: string; alt?: string };
+/** A chat bubble riding in the column between photos. */
+export type AutoSliderBubble = { bubble: string; side: "left" | "right"; tone: string };
+export type AutoSliderItem = AutoSliderImage | AutoSliderBubble;
 
 /**
  * An endless column of photos drifting upward, faded out at both ends.
@@ -29,7 +32,7 @@ export const ImageAutoSlider = ({
   durationSec = 30,
   className = "",
 }: {
-  images: AutoSliderImage[];
+  images: AutoSliderItem[];
   /** Seconds for one full pass through the set. Bigger is slower. */
   durationSec?: number;
   className?: string;
@@ -71,22 +74,37 @@ export const ImageAutoSlider = ({
           style={{ ["--ias-duration" as string]: `${durationSec}s` }}
           aria-hidden="true"
         >
-          {doubled.map((image, i) => (
-            <div
-              key={i}
-              // The gap lives here, not on the track — see note 2 above.
-              className="ias-item mb-5 w-full overflow-hidden rounded-xl shadow-[0_14px_34px_-14px_rgba(60,45,20,0.4)]"
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={image.src}
-                alt={image.alt ?? ""}
-                loading="lazy"
-                draggable={false}
-                className="aspect-video w-full select-none object-cover"
-              />
-            </div>
-          ))}
+          {doubled.map((item, i) =>
+            "bubble" in item ? (
+              // A chat message: its margin carries the gap like a photo's does,
+              // so the loop maths is unchanged. The corner on the speaker's
+              // side is squared off as the bubble's tail.
+              <div key={i} className={`mb-5 flex ${item.side === "right" ? "justify-end" : "justify-start"}`}>
+                <p
+                  className={`max-w-[80%] rounded-[20px] px-4 py-2.5 text-[15px] font-semibold shadow-[0_10px_24px_-12px_rgba(63,10,38,0.35)] ${
+                    item.side === "right" ? "rounded-br-[6px]" : "rounded-bl-[6px]"
+                  } ${item.tone}`}
+                >
+                  {item.bubble}
+                </p>
+              </div>
+            ) : (
+              <div
+                key={i}
+                // The gap lives here, not on the track — see note 2 above.
+                className="ias-item mb-5 w-full overflow-hidden rounded-xl shadow-[0_14px_34px_-14px_rgba(60,45,20,0.4)]"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={item.src}
+                  alt={item.alt ?? ""}
+                  loading="lazy"
+                  draggable={false}
+                  className="aspect-video w-full select-none object-cover"
+                />
+              </div>
+            ),
+          )}
         </div>
       </div>
     </>

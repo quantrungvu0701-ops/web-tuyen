@@ -14,7 +14,9 @@ export default function LoadingReveal({ holdMs = 1000 }: { holdMs?: number }) {
   const [revealed, setRevealed] = useState(false);
 
   useEffect(() => {
-    const timer = setTimeout(() => setRevealed(true), holdMs);
+    // Phones and small tablets hold 2s longer, to read the desktop hint.
+    const extra = window.matchMedia("(max-width: 1023px)").matches ? 2000 : 0;
+    const timer = setTimeout(() => setRevealed(true), holdMs + extra);
     return () => clearTimeout(timer);
   }, [holdMs]);
 
@@ -48,6 +50,11 @@ export default function LoadingReveal({ holdMs = 1000 }: { holdMs?: number }) {
           />
         ))}
       </div>
+      {/* Phones and small tablets only: the pinned and scroll-driven pieces
+          are built for a desktop screen. */}
+      <p className="max-w-[26ch] px-6 text-center text-sm font-medium leading-relaxed text-plum-500 lg:hidden">
+        Sử dụng máy tính để có trải nghiệm web tốt nhất
+      </p>
     </motion.div>
   );
 }

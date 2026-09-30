@@ -9,70 +9,73 @@ import { APPLY_HREF, GENERATION } from "@/lib/site";
 /**
  * The official cover (COVER.png, 9000×3000), rebuilt as a live scene.
  *
- * The background is the cover exactly: every cloud, both cliffs, the ground
- * and road, the pole, Bi, the paraglider and the car, each at its own cover
- * spot and at the cover's own scale (one number, --H, the scene's height).
+ * Everything that does not move — sky, clouds, both cliffs, the ground, the
+ * grass and the road — is ONE plate exported straight from COVER.ai
+ * (/kv/cover-plate.webp), so its composition is the designer's exactly. It is
+ * as tall as the screen allows (--H), which puts the ground and road where the
+ * cover has them. A screen is narrower than 3:1, so the plate is squeezed
+ * slightly across (--Wp), losing only the cover's empty outer edges.
  *
- * A screen is rarely 3:1, so the one thing that gives is the open sky between
- * the two mountains: the left side (cliff, pole, Bi) is anchored to the
- * screen's left edge, the right cliff and car to its right edge, and whatever
- * sits in between is drawn in proportionally. The lettering is then set in
- * that space, between the pole and the car.
+ * What moves — the paraglider, the sign pole and its lamps, Bi, the car — sits
+ * on top at its own cover spot and true shape, never squeezed.
  *
  * Every box below is in cover pixels, measured from the .ai (scene) or by
  * matching the Title/ pieces against COVER.png (text).
  */
 
 type Box = readonly [number, number, number, number];
-type Anchor = "left" | "mid" | "right";
 
 const COVER_W = 9000;
 const COVER_H = 3000;
 
 const BOX = {
-  cloudA: [3224, 67, 3971, 373],
-  cloudB: [4618, 204, 5360, 664],
-  cloudC: [5358, 191, 7053, 1313],
-  cliffLeft: [0, 182, 2398, 2630],
-  cliffRight: [6554, 0, 9000, 2526],
-  ground: [0, 1807, 9000, 3000],
   signpost: [1924, 239, 3652, 3000],
   bi: [444, 1631, 1988, 2958],
   paraglider: [1120, 241, 1894, 1134],
   car: [7540, 750, 8310, 1350],
   anger: [800, 1560, 1220, 1910],
-  titleOrg: [4096, 404, 6955, 854],
+  // Lifted 120 above and 32 right of its cover spot (≈5px on a laptop), per review: more air above "Tuyển Cộng tác viên".
+  titleOrg: [4128, 284, 6987, 734],
   titleMain: [3827, 527, 7362, 1480],
   titleGen: [4799, 1417, 6398, 1786],
 } as const satisfies Record<string, Box>;
 
-/** The sky between the mountains — the stretch that gets drawn in. */
-const GAP_L = 3700; // just past the pole's lamps and the K65 plate
-const GAP_R = BOX.cliffRight[0];
+const n = (v: number) => v.toFixed(5);
 
-/** A length of `n` cover pixels at the scene's current scale. */
-const cover = (n: number) => `calc(var(--H) * ${(n / COVER_H).toFixed(5)})`;
+/** Where cover x lands on screen: through the plate's squeeze. */
+const mapX = (x: number) => `var(--x0) + var(--Wp) * ${n(x / COVER_W)}`;
+/** A length of `v` cover pixels, unsqueezed. */
+const len = (v: number) => `var(--H) * ${n(v / COVER_H)}`;
 
 /**
- * Where a cover box lands on screen. `left` pieces keep their distance from
- * the screen's left edge, `right` pieces from its right edge, and `mid`
- * pieces slide in proportion to where they sit in the gap. `--squeeze` is the
- * cover's overflow (3H minus the screen width), and `--x0` nudges the whole
- * left side on phones.
+ * The left group — paraglider, sign pole, Bi — keeps the cover's own spacing
+ * (the squeeze would crowd Bi onto the GO sign) and is pinned to the plate as
+ * one piece at cover x 1300, which keeps Bi on screen and the pole's foot on
+ * the grass just left of where the road begins.
  */
-function place(b: Box, anchor: Anchor): CSSProperties {
-  const style: CSSProperties = {
+const LEFT_PIN = 1300;
+function placeLeft(b: Box): CSSProperties {
+  return {
     position: "absolute",
     top: `${((b[1] / COVER_H) * 100).toFixed(4)}%`,
-    width: cover(b[2] - b[0]),
+    left: `calc(${mapX(LEFT_PIN)} + ${len(b[0] - LEFT_PIN)})`,
+    width: `calc(${len(b[2] - b[0])})`,
   };
-  if (anchor === "right") {
-    style.right = cover(COVER_W - b[2]);
-  } else {
-    const f = anchor === "mid" ? Math.min(1, Math.max(0, ((b[0] + b[2]) / 2 - GAP_L) / (GAP_R - GAP_L))) : 0;
-    style.left = `calc(var(--x0) + var(--H) * ${(b[0] / COVER_H).toFixed(5)} - var(--squeeze) * ${f.toFixed(4)})`;
-  }
-  return style;
+}
+
+/**
+ * A lone moving piece at its cover spot: centred where the plate puts its
+ * centre, at its own true size so nothing round turns oval.
+ */
+function place(b: Box): CSSProperties {
+  const cx = (b[0] + b[2]) / 2;
+  const w = b[2] - b[0];
+  return {
+    position: "absolute",
+    top: `${((b[1] / COVER_H) * 100).toFixed(4)}%`,
+    left: `calc(${mapX(cx)} - ${len(w / 2)})`,
+    width: `calc(${len(w)})`,
+  };
 }
 
 /** A box's place inside a frame, as percentages of that frame. */
@@ -88,8 +91,14 @@ function within(b: Box, frame: Box): CSSProperties {
 }
 
 const TITLE: Box = [BOX.titleMain[0], BOX.titleOrg[1], BOX.titleMain[2], BOX.titleGen[3]];
-// The right cliff's own ground: from the cliff's foot to the cover's edge.
-const GROUND_RIGHT: Box = [GAP_R, BOX.ground[1], COVER_W, BOX.ground[3]];
+
+/**
+ * The lettering's column on wide screens: from the traffic light's right edge
+ * to the car's left edge, both as the plate places them.
+ */
+const carCx = (BOX.car[0] + BOX.car[2]) / 2;
+const COPY_LEFT = `calc(${mapX(LEFT_PIN)} + ${len(BOX.signpost[2] - LEFT_PIN)} + 12px)`;
+const COPY_RIGHT = `calc(100% - (${mapX(carCx)} - ${len((BOX.car[2] - BOX.car[0]) / 2)}) + 12px)`;
 
 // Where the three lamp faces sit inside signpost.webp, measured from the .ai.
 const LAMPS = [
@@ -112,51 +121,34 @@ function Outlined({ text, fill, stroke }: { text: string; fill: string; stroke: 
   );
 }
 
-/** On laptop widths the gap between pole and car is narrow; the buttons tuck in to share one row. */
+/** On laptop widths the column is narrow; the buttons tuck in to share one row. */
 const SNUG = "lg:max-[1400px]:h-14 lg:max-[1400px]:px-7 lg:max-[1400px]:text-[1.2rem]";
-
-/** Height of the band under the first screen that the next section's curve rolls over. */
-const BAND = 24;
 
 export default function Hero() {
   return (
     <section
       id="top"
-      className="hero relative isolate overflow-hidden bg-[var(--sky-peach)] [--enter-offset:1.05s]"
-      style={{ ["--band" as string]: `${BAND}px` }}
+      className="hero relative isolate overflow-hidden bg-[var(--sky-peach)] [--enter-offset:3.05s] lg:[--enter-offset:1.05s]"
+      style={
+        {
+          ["--copy-left" as string]: COPY_LEFT,
+          ["--copy-right" as string]: COPY_RIGHT,
+        } as CSSProperties
+      }
     >
-      {/* The cover's sky, at the scene's scale, its top row carried on up to
-          the top of the screen. Two copies, like the mountains: one pinned
-          left, one pinned right and faded in over the open middle. */}
-      <div aria-hidden="true" className="hero-sky absolute inset-y-0 -z-20" />
-      <div aria-hidden="true" className="hero-sky hero-sky-right hero-right-only absolute inset-y-0 right-0 -z-20" />
+      {/* The cover plate: sky, clouds, cliffs, ground, road — one piece. Its
+          top row carries on up the screen above it. */}
+      <div aria-hidden="true" className="hero-plate absolute inset-y-0 -z-20">
+        <div />
+      </div>
 
-      {/* The cover's scene, standing on the section's foot. Its bottom rows
-          (road, grass, pole foot) run under the next section's curve. */}
+      {/* What moves, each at its cover spot on the plate. */}
       <div aria-hidden="true" className="hero-scene pointer-events-none absolute inset-x-0 bottom-0 -z-10">
-        <img src="/kv/cloud-a.webp" alt="" className="anim-drift" style={{ ...place(BOX.cloudA, "left"), ["--dur" as string]: "22s" }} />
-        <img src="/kv/cloud-b.webp" alt="" className="anim-drift" style={{ ...place(BOX.cloudB, "mid"), ["--dur" as string]: "28s" }} />
-        <img src="/kv/cloud-c.webp" alt="" className="anim-drift hero-right-only" style={{ ...place(BOX.cloudC, "mid"), ["--dur" as string]: "34s" }} />
-
-        <img src="/kv/cliff-left.webp" alt="" style={place(BOX.cliffLeft, "left")} />
-        <img src="/kv/cliff-right.webp" alt="" className="hero-right-only" style={place(BOX.cliffRight, "right")} />
-
-        <img src="/kv/ground.webp" alt="" className="max-w-none" style={place(BOX.ground, "left")} />
-        {/* The right cliff's hills, carried with the cliff: the same ground
-            plate cut to the cliff's stretch, fading in from the left so it
-            melts into the main ground instead of seaming. */}
-        <div
-          className="hero-right-only overflow-hidden [mask-image:linear-gradient(90deg,transparent,black_40%)]"
-          style={{ ...place(GROUND_RIGHT, "right"), height: `${((GROUND_RIGHT[3] - GROUND_RIGHT[1]) / COVER_H) * 100}%` }}
-        >
-          <img src="/kv/ground.webp" alt="" className="absolute top-0 max-w-none" style={{ ...within(BOX.ground, GROUND_RIGHT) }} />
-        </div>
-
-        <div className="enter" style={{ ...place(BOX.paraglider, "left"), ["--d" as string]: "0.5s" }}>
+        <div className="enter" style={{ ...placeLeft(BOX.paraglider), ["--d" as string]: "0.5s" }}>
           <img src="/kv/paraglider.webp" alt="" className="anim-glide w-full" />
         </div>
 
-        <div className="enter" style={{ ...place(BOX.signpost, "left"), ["--d" as string]: "0.15s" }}>
+        <div className="enter" style={{ ...placeLeft(BOX.signpost), ["--d" as string]: "0.15s" }}>
           <div className="relative">
             <img src="/kv/signpost.webp" alt="" className="w-full" />
             {LAMPS.map((l, i) => (
@@ -174,22 +166,21 @@ export default function Hero() {
           </div>
         </div>
 
-        <div className="enter" style={{ ...place(BOX.bi, "left"), ["--d" as string]: "0.3s" }}>
+        <div className="enter" style={{ ...placeLeft(BOX.bi), ["--d" as string]: "0.3s" }}>
           <div className="anim-bob relative" style={{ ["--dur" as string]: "3.6s" }}>
             <img src="/kv/bi.webp" alt="" className="w-full" />
             <img src="/kv/bi-anger.webp" alt="" className="anim-pulse" style={within(BOX.anger, BOX.bi)} />
           </div>
         </div>
 
-        <div className="enter hero-right-only" style={{ ...place(BOX.car, "right"), ["--d" as string]: "0.6s" }}>
+        <div className="enter hero-right-only" style={{ ...place(BOX.car), ["--d" as string]: "0.6s" }}>
           <img src="/kv/car.webp" alt="" className="anim-hop w-full" />
         </div>
       </div>
 
       {/* ------------------------------------------------ the first screen */}
       <div className="relative flex min-h-[100svh] flex-col">
-        {/* The lettering and the action, set in the sky between the pole and
-            the car. */}
+        {/* The lettering and the action, between the pole and the car. */}
         <div className="hero-copy relative z-10 flex flex-col items-center px-5 pt-24 text-center">
           <h1 className="hero-title enter relative w-full" style={{ ["--d" as string]: "0.2s" }}>
             <span className="sr-only">
@@ -219,19 +210,15 @@ export default function Hero() {
 
           <div className="enter mt-7 flex flex-wrap items-center justify-center gap-3" style={{ ["--d" as string]: "0.55s" }}>
             <ButtonLink href={APPLY_HREF} size="lg" className={SNUG}>
-              Ứng tuyển ngay
+              Điền đơn ngay
               <ArrowRight />
             </ButtonLink>
             <ButtonLink href="#hanh-trinh" variant="secondary" size="lg" className={SNUG}>
-              Xem hành trình
+              Hành trình ứng tuyển
             </ButtonLink>
           </div>
         </div>
       </div>
-
-      {/* Below the fold: the scene keeps painting here, and the next
-          section's curve rolls over it — so the first screen is all hero. */}
-      <div aria-hidden="true" style={{ height: BAND }} />
     </section>
   );
 }

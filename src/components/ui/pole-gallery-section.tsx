@@ -3,10 +3,12 @@
 import { useRef } from "react";
 import gsap from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
+import { ScrollSmoother } from "gsap/ScrollSmoother";
 import { useGSAP } from "@gsap/react";
 import { ButtonLink, Sticker } from "@/components/v24/ui";
 import { EVENTS, SUPPORT_PROJECTS, type SupportProject } from "@/lib/site";
 import GallerySlider, {
+  GALLERY_RESET,
   IMAGES_PER_SLIDE,
   type GallerySlide,
 } from "@/components/ui/gallery-slider";
@@ -35,6 +37,9 @@ gsap.registerPlugin(ScrollTrigger, useGSAP);
 /** Four event galleries, then the projects panel. */
 const N = EVENTS.length + 1;
 const PROJECTS_INDEX = EVENTS.length;
+
+/** DEMO: snap each scroll to the next category instead of free scrubbing. */
+const SNAP_STEPS = true;
 
 /** Fraction of each step spent resting on a category before the turn starts. */
 const HOLD = 0.42;
@@ -65,7 +70,7 @@ const CLUSTER_TOP = GEO.postTop + GEO.capToSigns;
 
 /**
  * The five signs, top to bottom: blade, plate, blade, plate for the four
- * event categories, and the K65 oval at the foot for the projects.
+ * event categories, and a fifth blade at the foot for the projects.
  */
 type SignStyle = {
   w: number;
@@ -76,8 +81,7 @@ type SignStyle = {
 
 const BLADE: SignStyle = { w: 300, h: 92, shape: "blade", fontSize: 21 };
 const PLATE: SignStyle = { w: 286, h: 92, shape: "plate", fontSize: 20 };
-const OVAL: SignStyle = { w: 300, h: 150, shape: "oval", fontSize: 20 };
-const SIGNS: SignStyle[] = [BLADE, PLATE, BLADE, PLATE, OVAL];
+const SIGNS: SignStyle[] = [BLADE, PLATE, BLADE, PLATE, BLADE];
 
 /** Signs stack down the post, so each one's top depends on those above it. */
 const SIGN_TOPS = SIGNS.reduce<number[]>((acc, s, i) => {
@@ -88,7 +92,7 @@ const SIGN_TOPS = SIGNS.reduce<number[]>((acc, s, i) => {
 const CLUSTER_H = SIGN_TOPS[SIGN_TOPS.length - 1] + SIGNS[SIGNS.length - 1].h;
 
 const TOKENS = {
-  background: "var(--blush)",
+  background: "transparent",
   pink: "#FF2E7B",
   pinkDeep: "#E0115F",
   pinkPale: "#FFE1E8",
@@ -96,8 +100,8 @@ const TOKENS = {
   plum: "#3F0A26",
   collar: "#2F8F4B",
   collarHi: "#6CCB7D",
-  mirrorRim: "#27B04A",
-  mirrorRimHi: "#7FE39A",
+  mirrorRim: "#FFE1E8",
+  mirrorRimHi: "#FF7FA3",
 } as const;
 
 /**
@@ -130,6 +134,9 @@ const CATEGORIES: Category[] = EVENTS.map((cat, c) => ({
       ),
   })),
 }));
+
+/** Every event across the four galleries: they share one text-area height. */
+const ALL_SLIDES = CATEGORIES.flatMap((c) => c.slides);
 
 const TITLES = [...CATEGORIES.map((c) => c.title), SUPPORT_PROJECTS.title];
 
@@ -196,7 +203,13 @@ export default function PoleGallerySection() {
               el.style.transform = `translateY(${(1 - s) * 12}px) scale(${
                 0.985 + 0.015 * s
               })`;
-              el.style.visibility = s <= 0.001 ? "hidden" : "visible";
+              const hidden = s <= 0.001;
+              // A category coming back into view opens on its first event,
+              // whatever the reader left it on last time.
+              if (!hidden && el.style.visibility === "hidden") {
+                el.querySelector("[aria-roledescription=carousel]")?.dispatchEvent(new Event(GALLERY_RESET));
+              }
+              el.style.visibility = hidden ? "hidden" : "visible";
               el.style.pointerEvents = s > 0.5 ? "auto" : "none";
             });
           };
@@ -230,7 +243,27 @@ export default function PoleGallerySection() {
             onUpdate: (self) => apply(positionAt(self.progress)),
           });
 
+          // DEMO: one flick carries the pole all the way to the next sign.
+          // When scrolling stops inside the section, the page finishes the
+          // turn in the direction it was heading, through the smoother (GSAP's
+          // own `snap` fights ScrollSmoother and throws the page to the top).
+          const onScrollEnd = () => {
+            if (!SNAP_STEPS) return;
+            const p = st.progress;
+            if (p <= 0 || p >= 1) return;
+            const steps = N - 1;
+            const u = p * steps;
+            if (Math.abs(u - Math.round(u)) < 0.01) return;
+            const target = (st.direction > 0 ? Math.ceil(u) : Math.floor(u)) / steps;
+            const y = st.start + target * (st.end - st.start);
+            const smoother = ScrollSmoother.get();
+            if (smoother) smoother.scrollTo(y, true);
+            else window.scrollTo({ top: y, behavior: "smooth" });
+          };
+          ScrollTrigger.addEventListener("scrollEnd", onScrollEnd);
+
           return () => {
+            ScrollTrigger.removeEventListener("scrollEnd", onScrollEnd);
             st.kill();
             window.removeEventListener("resize", fit);
           };
@@ -255,7 +288,7 @@ export default function PoleGallerySection() {
       >
         <Sticker
           tone="ink"
-          className="mb-10 px-6 text-center text-[clamp(2.4rem,5vw,4.4rem)] xl:-mt-[6px] xl:mb-10"
+          className="mb-10 px-6 text-center text-[clamp(2.4rem,5vw,4.4rem)] xl:mt-[18px] xl:mb-10 xl:translate-x-[50px]"
         >
           Các sự kiện chính
         </Sticker>
@@ -270,7 +303,9 @@ export default function PoleGallerySection() {
             perspectiveOrigin: `${GEO.postCenter}px ${CLUSTER_TOP + CLUSTER_H / 2}px`,
           }}
         >
+          <PostFeet />
           <Post />
+          <FootCollar />
           <div
             ref={clusterRef}
             className="absolute"
@@ -328,6 +363,7 @@ export default function PoleGallerySection() {
                     slides={CATEGORIES[k].slides}
                     label={title.replace("\n", " ")}
                     fill
+                    sizeWith={ALL_SLIDES}
                   />
                 )}
               </div>
@@ -382,9 +418,10 @@ function Post() {
   return (
     <div
       aria-hidden="true"
-      className="absolute bottom-0"
+      className="absolute"
       style={{
         top: GEO.postTop,
+        bottom: POST_FOOT,
         left: GEO.postCenter - GEO.postWidth / 2,
         width: GEO.postWidth,
         background: POST_FILL,
@@ -398,7 +435,56 @@ function Post() {
   );
 }
 
-/** The green collars the cover's signs are clamped on: two above, one below. */
+/**
+ * The pole's base, drawn flat in the key visual's own colours (the art's base,
+ * Key visual/7.png, is drawn in perspective and tilted). The post stops at the
+ * middle of the hole, so it reads as standing in it.
+ */
+const FEET = { w: 98, h: 39, bottom: 4 };
+/** Hole centre, from the base's bottom edge: 28 of the drawing's 40 units. */
+const POST_FOOT = FEET.bottom + FEET.h * (28 / 40);
+
+function PostFeet() {
+  return (
+    <svg
+      aria-hidden="true"
+      viewBox="0 0 100 40"
+      className="absolute"
+      style={{ left: GEO.postCenter - FEET.w / 2, bottom: FEET.bottom, width: FEET.w, height: FEET.h }}
+    >
+      <defs>
+        <linearGradient id="feet-side" x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#EE9A8A" />
+          <stop offset="1" stopColor="#DE5986" />
+        </linearGradient>
+      </defs>
+      {/* The rim, then the top face, then the hole the post stands in. */}
+      <path d="M2 12 L7 29 A43 9 0 0 0 93 29 L98 12 Z" fill="url(#feet-side)" />
+      <ellipse cx="50" cy="12" rx="48" ry="10" fill="#DE5986" />
+      <ellipse cx="50" cy="12" rx="15.8" ry="3.6" fill="#B8406C" />
+    </svg>
+  );
+}
+
+/** The green collars the cover's signs are clamped on, above the top sign (the one below sits by the base: FootCollar). */
+/** A green clamp ringing the post a little above its base, as on the cover. */
+function FootCollar() {
+  const w = GEO.postWidth + 10;
+  return (
+    <div
+      aria-hidden="true"
+      className="absolute h-3 rounded-full"
+      style={{
+        left: GEO.postCenter - w / 2,
+        bottom: POST_FOOT + 1,
+        width: w,
+        background: `linear-gradient(90deg, ${TOKENS.collar}, ${TOKENS.collarHi} 40%, ${TOKENS.collar})`,
+        boxShadow: "0 2px 3px rgb(20 60 30 / 0.3)",
+      }}
+    />
+  );
+}
+
 function Collars() {
   const band = `linear-gradient(90deg, ${TOKENS.collar}, ${TOKENS.collarHi} 40%, ${TOKENS.collar})`;
   const w = GEO.postWidth + 8;
@@ -412,7 +498,6 @@ function Collars() {
     <div aria-hidden="true">
       {at(-26)}
       {at(-12)}
-      {at(CLUSTER_H + 12)}
     </div>
   );
 }
@@ -573,7 +658,7 @@ function ProjectMirror({ project }: { project: SupportProject }) {
         className="relative aspect-square overflow-hidden rounded-full"
         style={{
           width: "var(--mirror)",
-          // The cover mirror's rims: deep green, then a pale green lip.
+          // The pale plate sign's colours: its pale pink face, then its printed pink edge.
           boxShadow: `0 0 0 10px ${TOKENS.mirrorRim}, 0 0 0 14px ${TOKENS.mirrorRimHi}, 0 30px 44px -18px rgb(63 10 38 / 0.45)`,
         }}
       >
@@ -595,7 +680,7 @@ function ProjectMirror({ project }: { project: SupportProject }) {
           }}
         />
       </div>
-      <ButtonLink href={project.href} external={project.href !== "#"}>
+      <ButtonLink href={project.href} external={project.href !== "#"} className="!font-display">
         {project.name}
       </ButtonLink>
     </div>

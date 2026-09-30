@@ -1,5 +1,6 @@
 "use client";
 
+import Decor from "@/components/v24/Decor";
 import { Sticker } from "@/components/v24/ui";
 
 import { Fragment, useCallback, useEffect, useRef, useState } from "react";
@@ -18,28 +19,26 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 const DOORWAYS = [
   {
     id: "gioi-thieu",
-    label: "Video giới thiệu",
+    label: "Tuyển Cộng tác viên thế hệ thứ 24",
     src: "https://raw.githubusercontent.com/gughigug/run-hero-assets/main/Legs_sprinting_on_pavement_1080p_202608312152.mp4",
     poster: "/hero-background.webp",
   },
   {
     id: "mv",
-    label: "MV",
+    label: "Tuyển Cộng tác viên thế hệ thứ 23",
     src: "https://raw.githubusercontent.com/gughigug/run-hero-assets/main/Legs_sprinting_on_pavement_1080p_202608312152.mp4",
     poster: "/hero-background.webp",
   },
   {
     id: "hau-truong",
-    label: "Hậu trường",
+    label: "Tuyển Cộng tác viên thế hệ thứ 22",
     src: "https://raw.githubusercontent.com/gughigug/run-hero-assets/main/Legs_sprinting_on_pavement_1080p_202608312152.mp4",
     poster: "/hero-background.webp",
   },
 ];
 
 const TOKENS = {
-  // Thế hệ 24: the one deep section on the page — a plum platform, so the
-  // videos read like a screen in a dark room, and a KV-pink train on it.
-  platform: "#3F0A26",
+  // A KV-pink train, pulling in across the page's one sky.
   steel: "#FFB8C6",
   steelDark: "#F08AA5",
   steelLight: "#FFD9DF",
@@ -50,10 +49,19 @@ const TOKENS = {
   rubber: "#0F1113",
   underframe: "#171A1D",
   roundel: "#FFE98A",
+  // The progress dots, on the page's light sky.
+  dotOn: "#E0115F",
+  dotOff: "rgba(63, 10, 38, 0.2)",
+  /** The B plate on the car body: the roundel's yellow, dimmed. */
+  plate: "#E3C265",
   sticker: "#FFD84D",
 } as const;
 
 /** Cell widths as a fraction of the visible shell width. */
+/** The page's content column (max-w-7xl less its padding): sizes the doorways. */
+const CONTENT_W = 1216;
+/** Extra car panels past each end, so a full-width car never shows its end. */
+const END_PANELS = 2;
 const DOOR_RATIO = 0.62;
 const BODY_RATIO = 0.3;
 
@@ -120,12 +128,16 @@ export default function MetroDoorReveal() {
     return () => ro.disconnect();
   }, []);
 
-  const doorWidth = shellWidth * DOOR_RATIO;
-  const bodyWidth = shellWidth * BODY_RATIO;
+  // The car runs the full width of the screen, but its doorways keep the size
+  // they have in the page's content column.
+  const baseWidth = Math.min(shellWidth, CONTENT_W);
+  const doorWidth = baseWidth * DOOR_RATIO;
+  const bodyWidth = baseWidth * BODY_RATIO;
   const doorHeight = (doorWidth * 9) / 16;
 
-  // Left edge of doorway i inside the strip: body, door, body, door, …
-  const doorLeft = (i: number) => bodyWidth * (i + 1) + doorWidth * i;
+  // Left edge of doorway i inside the strip: the extra end panels, then
+  // body, door, body, door, …
+  const doorLeft = (i: number) => bodyWidth * (i + 1 + END_PANELS) + doorWidth * i;
   const offset = shellWidth / 2 - (doorLeft(index) + doorWidth / 2);
 
   const travelTo = useCallback(
@@ -162,17 +174,18 @@ export default function MetroDoorReveal() {
   return (
     <section
       ref={sectionRef}
-      id="mv" className="w-full px-4 py-28 md:px-8 lg:py-36"
-      style={{ backgroundColor: TOKENS.platform }}
+      id="mv" className="relative w-full overflow-hidden pb-28 pt-10 lg:pb-36 lg:pt-12"
     >
-      <div className="mx-auto w-full max-w-7xl">
-        <Sticker className="mb-4 text-center text-[clamp(2.4rem,5vw,4.4rem)]">MV của Hội</Sticker>
-        <p className="mb-10 text-center font-display text-xl text-pink-200 sm:text-2xl">
+      <Decor src="/kv/cloud-1.webp" flip className="left-[6%] top-10 hidden w-56 lg:block" dur="28s" />
+      <Decor src="/kv/cloud-6.webp" flip className="-left-14 bottom-2 hidden w-56 opacity-90 lg:block" dur="36s" />
+      <div className="w-full">
+        <Sticker className="mb-4 px-4 text-center text-[clamp(2.4rem,5vw,4.4rem)]">MV của Hội</Sticker>
+        <p className="mb-10 px-4 text-center font-display text-xl text-pink-700 sm:text-2xl">
           {DOORWAYS[index].label}
         </p>
 
         <div
-          className="relative overflow-hidden rounded-sm shadow-2xl"
+          className="relative overflow-hidden shadow-2xl"
           style={{ backgroundColor: TOKENS.steel }}
         >
           {/* Roof line — fixed, the car slides underneath it */}
@@ -203,9 +216,12 @@ export default function MetroDoorReveal() {
                   : `transform ${TIMING.slideMs}ms cubic-bezier(0.65, 0, 0.35, 1)`,
               }}
             >
+              {Array.from({ length: END_PANELS }, (_, k) => (
+                <CarBodySection key={`lead-${k}`} width={bodyWidth} number="HSV-008" />
+              ))}
               {DOORWAYS.map((doorway, i) => (
                 <Fragment key={doorway.id}>
-                  <CarBodySection width={bodyWidth} number={`R-38${i + 1}`} />
+                  <CarBodySection width={bodyWidth} number="HSV-008" />
                   <MetroDoorway
                     {...doorway}
                     width={doorWidth}
@@ -215,19 +231,11 @@ export default function MetroDoorReveal() {
                   />
                 </Fragment>
               ))}
-              <CarBodySection width={bodyWidth} number="R-384" />
+              {Array.from({ length: END_PANELS + 1 }, (_, k) => (
+                <CarBodySection key={`tail-${k}`} width={bodyWidth} number="HSV-008" />
+              ))}
             </div>
 
-            <ArrowButton
-              side="left"
-              enabled={canGoPrev}
-              onClick={() => travelTo(index - 1)}
-            />
-            <ArrowButton
-              side="right"
-              enabled={canGoNext}
-              onClick={() => travelTo(index + 1)}
-            />
           </div>
 
           {/* Sill + underframe */}
@@ -243,18 +251,22 @@ export default function MetroDoorReveal() {
 
         {/* Which carriage you're looking at — title now sits above the video,
             so this is just the 3 dots. */}
-        <ol className="mt-6 flex items-center justify-center gap-2" aria-hidden="true">
+        <div className="mt-6 flex items-center justify-center gap-4">
+        <ArrowButton side="left" enabled={canGoPrev} onClick={() => travelTo(index - 1)} />
+        <ol className="flex items-center justify-center gap-2" aria-hidden="true">
           {DOORWAYS.map((d, i) => (
             <li
               key={d.id}
               className="h-2.5 w-2.5 rounded-full transition-colors"
               style={{
                 backgroundColor:
-                  i === index ? TOKENS.roundel : "rgba(255, 255, 255, 0.35)",
+                  i === index ? TOKENS.dotOn : TOKENS.dotOff,
               }}
             />
           ))}
         </ol>
+        <ArrowButton side="right" enabled={canGoNext} onClick={() => travelTo(index + 1)} />
+        </div>
       </div>
     </section>
   );
@@ -275,9 +287,7 @@ function ArrowButton({
       onClick={onClick}
       disabled={!enabled}
       aria-label={side === "left" ? "Toa trước" : "Toa tiếp theo"}
-      className={`absolute top-1/2 z-20 flex size-12 -translate-y-1/2 items-center justify-center rounded-full bg-black/55 text-xl text-white outline-none backdrop-blur transition-opacity hover:bg-black/75 focus-visible:ring-2 focus-visible:ring-white disabled:cursor-not-allowed disabled:opacity-25 ${
-        side === "left" ? "left-3" : "right-3"
-      }`}
+      className="flex size-12 cursor-pointer items-center justify-center rounded-full bg-white/85 text-xl text-pink-600 shadow-[var(--shadow-sm)] outline-none ring-1 ring-pink-200 transition-[background-color,opacity] hover:bg-white focus-visible:ring-2 focus-visible:ring-pink-500 disabled:cursor-not-allowed disabled:opacity-35"
     >
       <span aria-hidden="true">{side === "left" ? "←" : "→"}</span>
     </button>
@@ -312,9 +322,9 @@ function CarBodySection({
       />
       <div
         className="absolute left-1/2 top-[60%] flex h-8 w-8 -translate-x-1/2 items-center justify-center rounded-[3px] text-sm font-black text-white"
-        style={{ backgroundColor: TOKENS.roundel }}
+        style={{ backgroundColor: TOKENS.plate }}
       >
-        M
+        B
       </div>
       <span className="absolute left-[8%] top-[56%] text-[10px] font-semibold tracking-wide text-black/45">
         {number}

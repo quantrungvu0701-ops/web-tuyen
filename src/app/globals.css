@@ -71,14 +71,28 @@
   --font-accent: var(--font-lf-negrita);
   --font-sign: var(--font-ps-bolden);
   --font-sans: var(--font-be-vietnam);
+  --font-hand: var(--font-patrick-hand);
 }
 
 html {
   scrollbar-color: var(--pink-300) var(--cream);
 }
 
+/* One sky for the whole page, in the cover's own colours: pink at both edges,
+   butter-peach across the middle. Fixed, so every section scrolls over the same
+   sky instead of each bringing its own background. (Where fixed backgrounds
+   are unsupported — iOS — it simply spans the page instead.) */
 body {
-  background: var(--background);
+  background: linear-gradient(
+      90deg,
+      #ffb8cc 0%,
+      #fdd4c8 17%,
+      #fce6c7 38%,
+      #fce9c8 62%,
+      #fdd4c8 83%,
+      #ffbdd0 100%
+    )
+    fixed;
   color: var(--foreground);
   font-feature-settings: "kern", "liga";
 }
@@ -129,7 +143,10 @@ textarea {
 .sticker {
   display: grid;
   font-family: var(--font-display);
-  line-height: 1.02;
+  /* Section headings are set in capitals; the extra leading leaves room for
+     stacked capital diacritics (Ộ, Ể, Ậ) between lines. */
+  text-transform: uppercase;
+  line-height: 1.12;
   letter-spacing: 0.01em;
   text-wrap: balance;
 }
@@ -248,34 +265,36 @@ textarea {
 }
 
 /* ----------------------------------------------------------------------------
-   Hero scene — the cover at its own scale, sized by one number, --H (its
-   height; the cover is 3H wide). The left side is pinned to the screen's left
-   edge, the right cliff to its right edge, and the sky between them is drawn
-   in by --squeeze, the cover's overflow past the screen (see place() in Hero).
+   Hero — the cover plate, sized by one number, --H (its height; the cover is
+   3H wide unsqueezed). --Wp is the plate's width on screen and --x0 its left
+   edge; the moving pieces are placed through the same two (see Hero.tsx).
 ---------------------------------------------------------------------------- */
 .hero {
   /* Phones: the scene is a band under the lettering, left side only. */
   --H: min(82vw, 42svh);
+  --Wp: calc(var(--H) * 3);
   --x0: calc(var(--H) * -0.15);
-  --squeeze: 0px;
 }
 .hero-scene {
   height: var(--H);
 }
-.hero-sky {
+/* Above the plate, the sky's own top row (no cloud) carries on up; the
+   plate's top edge fades into it, so a cloud touching the cover's top edge
+   never stretches into a column. */
+.hero-plate {
   left: var(--x0);
-  width: calc(var(--H) * 3);
-  background:
-    url("/kv/sky.webp") left bottom / 100% var(--H) no-repeat,
-    url("/kv/sky-top.webp") left top / 100% 100% no-repeat;
+  width: var(--Wp);
+  background: url("/kv/sky-top.webp") left top / 100% 100% no-repeat;
 }
-/* From cover x 5600 (open sky) to the right edge; masked in over 700px. */
-.hero-sky-right {
-  left: auto;
-  width: calc(var(--H) * 1.1333);
-  background-position: right bottom, right top;
-  background-size: calc(var(--H) * 3) var(--H), calc(var(--H) * 3) 100%;
-  mask-image: linear-gradient(90deg, transparent, black 20.6%);
+.hero-plate > div,
+.final-scene > .final-plate {
+  mask-image: linear-gradient(to bottom, transparent, #000 7%);
+}
+.hero-plate > div {
+  position: absolute;
+  inset: auto 0 0 0;
+  height: var(--H);
+  background: url("/kv/cover-plate.webp") 0 0 / 100% 100% no-repeat;
 }
 .hero-right-only {
   display: none;
@@ -292,27 +311,68 @@ textarea {
 
 @media (min-width: 1024px) {
   .hero {
-    /* The whole cover, both mountains, with ~9% of its width taken out of
-       the open sky; capped so a very wide screen keeps the nav clear. */
-    --H: min(calc(100vw / 2.75), calc(100svh - 72px));
-    --x0: 0px;
-    --squeeze: calc(var(--H) * 3 - 100%);
+    /* As tall as the screen (so the ground and road sit where the cover has
+       them), unless the screen is wider than 2.3:1. The plate shows cover
+       x 400-8600 edge to edge (100% × 9000/8200), squeezed across to fit;
+       on a screen wide enough it is simply shown whole and centred. */
+    --H: min(100svh, calc(100vw / 2.3));
+    --Wp: min(calc(var(--H) * 3), 109.756%);
+    --x0: calc((100% - var(--Wp)) / 2);
   }
   .hero-right-only {
     display: block;
   }
-  /* The lettering takes the sky between the pole (x 3700) and the car
-     (1460 from the right), and sits above the grass. */
+  /* Between the traffic light and the car, standing on the lower part of the
+     scene, with the road left clear beneath it. */
   .hero-copy {
     position: absolute;
-    inset: 0 calc(var(--H) * 0.4867) 0 calc(var(--H) * 1.2333);
-    justify-content: center;
-    padding: 72px 0 calc(var(--H) * 0.25 - var(--band));
+    left: var(--copy-left);
+    right: var(--copy-right);
+    top: 72px;
+    bottom: calc(var(--H) * 0.11);
+    justify-content: flex-end;
+    padding: 0;
   }
   .hero-title {
-    max-width: min(100%, 760px);
+    max-width: min(100%, 680px);
   }
   .hero-title > span {
     transform: none;
+  }
+}
+
+/* ----------------------------------------------------------------------------
+   The closing section's scene: the cover without its mid-sky clouds, shown
+   whole across the screen (wider than the screen on phones, so the cast
+   keeps a readable size), its top fading into the page's own sky.
+---------------------------------------------------------------------------- */
+.final-scene {
+  --Wf: 240%;
+  --xf: -10%;
+  left: var(--xf);
+  width: var(--Wf);
+  aspect-ratio: 3 / 1;
+}
+@media (min-width: 1024px) {
+  .final-scene {
+    --Wf: 100%;
+    --xf: 0%;
+  }
+}
+
+/* A sticker heading kept to one line on wide screens. `.sticker`'s own
+   text-wrap: balance would override Tailwind's layered whitespace-nowrap. */
+@media (min-width: 1024px) {
+  .sticker-one-line,
+  .sticker-one-line .sticker {
+    text-wrap: nowrap;
+  }
+}
+
+/* "Chọn nhân vật của bạn" on one line inside the card's column. The
+   unlayered rule is needed to beat the Sticker's own size utility. */
+@media (min-width: 1024px) {
+  .char-head .sticker {
+    font-size: clamp(2.4rem, 4vw, 3.8rem);
   }
 }

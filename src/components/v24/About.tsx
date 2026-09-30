@@ -1,33 +1,27 @@
 /* eslint-disable @next/next/no-img-element */
-import { ImageAutoSlider, type AutoSliderImage } from "@/components/ui/image-auto-slider";
+import { ImageAutoSlider, type AutoSliderItem } from "@/components/ui/image-auto-slider";
+import Decor from "./Decor";
 import { Sticker } from "./ui";
 
-/** TODO(photos): real BFF photos, 16:9. These cycle last year's placeholders. */
-const PHOTOS = ["/gallery/p1.jpg", "/gallery/p2.jpg", "/gallery/p3.png", "/gallery/p4.webp"];
-const COLUMN: AutoSliderImage[] = Array.from({ length: 8 }, (_, i) => ({
-  src: PHOTOS[i % PHOTOS.length],
-  alt: "",
-}));
-
-/** Last year's own office chatter — the family, in its own words. */
-const BUBBLES = [
-  { text: "Ai đi ăn trưa không?", cls: "left-[-6%] top-[14%] -rotate-3", tone: "bg-white text-plum-900" },
-  { text: "Boardgame đê cả nhà", cls: "right-[-8%] top-[42%] rotate-2", tone: "bg-pink-600 text-white" },
-  { text: "Ai xuống văn phòng không?", cls: "left-[-10%] bottom-[16%] rotate-1", tone: "bg-butter text-plum-900" },
+/**
+ * The column: a photo, then a line of office chatter, three times over — the
+ * family, in its own words, drifting up with the pictures.
+ * TODO(photos): real BFF photos, 16:9. These are last year's placeholders.
+ */
+const COLUMN: AutoSliderItem[] = [
+  { src: "/gallery/p1.jpg", alt: "" },
+  { bubble: "Ai đi ăn trưa không?", side: "left", tone: "bg-white text-plum-900" },
+  { src: "/gallery/p2.jpg", alt: "" },
+  { bubble: "Ai xuống văn phòng không?", side: "right", tone: "bg-pink-600 text-white" },
+  { src: "/gallery/p3.png", alt: "" },
+  { bubble: "Ai có 3k gửi xe không?", side: "left", tone: "bg-butter text-plum-900" },
 ];
 
 export default function About() {
   return (
-    <section id="gioi-thieu" className="relative bg-cream pb-28 pt-20 lg:pb-36 lg:pt-28">
-      {/* The ground rolls into the page: one soft cream hill over the hero's grass. */}
-      <svg
-        aria-hidden="true"
-        viewBox="0 0 1440 80"
-        preserveAspectRatio="none"
-        className="absolute inset-x-0 -top-[24px] h-[26px] w-full text-cream"
-      >
-        <path d="M0 80V56Q720 -8 1440 56V80H0Z" fill="currentColor" />
-      </svg>
+    <section id="gioi-thieu" className="relative pb-28 pt-20 lg:pb-36 lg:pt-28">
+      <Decor src="/kv/cloud-a.webp" className="right-[5%] top-10 hidden w-40 lg:block" dur="24s" />
+      <Decor src="/kv/paraglider.webp" anim="glide" className="bottom-6 left-[4%] hidden w-24 lg:block xl:w-28" />
 
       <div className="mx-auto grid max-w-6xl items-center gap-16 px-6 lg:grid-cols-[1.05fr_1fr] lg:gap-20 lg:px-10">
         <div>
@@ -45,7 +39,7 @@ export default function About() {
             <p>
               Hội Sinh viên trường Đại học Ngoại thương là tổ chức đại diện cho ngôi nhà
               chung <strong className="font-semibold text-pink-600">BFF – Big Fat Family</strong>{" "}
-              với 3 Ban và 2 Câu lạc bộ trực thuộc.
+              với 3 Ban chức năng và 2 Câu lạc bộ trực thuộc.
             </p>
           </div>
 
@@ -58,16 +52,8 @@ export default function About() {
 
         <div className="relative mx-auto w-full max-w-[520px]">
           <div className="relative h-[26rem] overflow-hidden rounded-[32px] bg-blush p-3 shadow-[var(--shadow-lg)] ring-1 ring-white sm:h-[32rem]">
-            <ImageAutoSlider images={COLUMN} durationSec={34} />
+            <ImageAutoSlider images={COLUMN} durationSec={16} />
           </div>
-          {BUBBLES.map((b) => (
-            <p
-              key={b.text}
-              className={`absolute z-10 hidden rounded-[18px] px-4 py-2.5 text-sm font-semibold shadow-[var(--shadow-md)] sm:block ${b.cls} ${b.tone}`}
-            >
-              {b.text}
-            </p>
-          ))}
           <img
             src="/kv/sign-bff.webp"
             alt=""

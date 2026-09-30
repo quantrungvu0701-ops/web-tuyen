@@ -2,6 +2,8 @@
 
 import { useCallback, useMemo, useRef, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
+import { CONTACT } from "@/lib/site";
 import {
   buildSteps,
   isBlank,
@@ -84,6 +86,11 @@ function QuestionField({
           </span>
         )}
       </label>
+      {field.note && (
+        <p className="-mt-1 mb-2 text-sm" style={{ color: T.muted }}>
+          {field.note}
+        </p>
+      )}
 
       {field.type === "longtext" && (
         <textarea
@@ -310,7 +317,7 @@ export default function ApplicationForm() {
         setStatus("error");
         setSendError(
           reply?.error === "duplicate"
-            ? "Email này đã được dùng để nộp đơn. Mỗi bạn chỉ nộp một đơn — nếu cần sửa, hãy liên hệ ban tổ chức."
+            ? "Email này đã được dùng để nộp đơn. Nếu em cần sửa, hãy liên hệ Fanpage Hội Sinh viên để được anh chị hỗ trợ nha!"
             : reply?.error === "closed"
               ? `Thời gian nhận đơn đã kết thúc lúc ${formatDeadline()}.`
               : "Chưa gửi được đơn. Bài làm của em vẫn được lưu — hãy thử lại sau ít phút.",
@@ -354,21 +361,33 @@ export default function ApplicationForm() {
     return (
       <Shell>
         <Card>
-          <div
-            aria-hidden="true"
-            className="mb-5 grid size-14 place-items-center rounded-full text-2xl"
-            style={{ backgroundColor: "#E7F5EC", color: T.ok }}
-          >
-            ✓
+          <div className="flex flex-col items-center text-center">
+            <div
+              aria-hidden="true"
+              className="mb-5 grid size-14 place-items-center rounded-full text-2xl"
+              style={{ backgroundColor: "#E7F5EC", color: T.ok }}
+            >
+              ✓
+            </div>
+            <h2 className="mb-3 font-display text-3xl font-semibold leading-snug" style={{ color: T.ink }}>
+              Chúc mừng em đã hoàn thành phần đơn và
+              <br />
+              cảm ơn em đã lựa chọn Hội Sinh viên!
+            </h2>
+            <p className="max-w-[60ch] leading-relaxed" style={{ color: T.muted }}>
+              Hãy theo dõi{" "}
+              <a
+                href={CONTACT.fanpage}
+                target="_blank"
+                rel="noreferrer"
+                className="font-semibold underline underline-offset-4"
+                style={{ color: T.accent }}
+              >
+                Fanpage của Hội Sinh viên
+              </a>{" "}
+              để không bỏ lỡ bất kỳ thông tin nào nhé, hẹn gặp lại em!
+            </p>
           </div>
-          <h2 className="mb-3 font-display text-3xl font-semibold" style={{ color: T.ink }}>
-            Đã nhận đơn của em!
-          </h2>
-          <p className="leading-relaxed" style={{ color: T.muted }}>
-            Cảm ơn em đã dành thời gian cho Hội Sinh viên trường Đại học Ngoại
-            thương. Anh chị sẽ liên hệ với em qua email và số điện thoại em đã
-            điền. Chúc em thật nhiều may mắn!
-          </p>
         </Card>
       </Shell>
     );
@@ -380,14 +399,6 @@ export default function ApplicationForm() {
     <Shell>
       <div ref={topRef} className="scroll-mt-6" />
 
-      {draft.restored && step > 0 && (
-        <p
-          className="mb-5 rounded-lg border px-4 py-3 text-sm"
-          style={{ borderColor: T.line, backgroundColor: "#FFFDF7", color: T.muted }}
-        >
-          Anh chị đã khôi phục bài làm dang dở của em.
-        </p>
-      )}
 
       <Card>
         {current.hint && (
@@ -462,7 +473,8 @@ function Shell({ children }: { children: React.ReactNode }) {
       {/* The Thế hệ 24 key visual, whole and uncropped — it already carries
           the "Tuyển Cộng tác viên" lettering, so the page heading below
           names the form rather than repeating the campaign. */}
-      <a href="/" aria-label="Về trang chủ" className="block">
+      <div className="relative">
+      <Link href="/" aria-label="Về trang chủ" className="block">
         <Image
           src="/kv/kv-banner.webp"
           alt="Tuyển Cộng tác viên — Hội Sinh viên trường Đại học Ngoại thương, thế hệ thứ 24"
@@ -471,9 +483,20 @@ function Shell({ children }: { children: React.ReactNode }) {
           priority
           className="h-auto w-full"
         />
-      </a>
+      </Link>
+      {/* A plain way back, on the banner's road. */}
+      <Link
+        href="/"
+        className="absolute bottom-[calc(4%-10px)] left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/92 px-5 py-2.5 font-accent text-base text-pink-700 shadow-[var(--shadow-md)] ring-2 ring-pink-200 transition-[transform,background-color] duration-300 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:bg-white sm:px-6 sm:py-3 sm:text-lg"
+      >
+        <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+          <path d="M19 12H5M11 18l-6-6 6-6" />
+        </svg>
+        Về trang chủ
+      </Link>
+      </div>
 
-      <div className="mx-auto w-full max-w-2xl px-5 py-10 sm:px-6 sm:py-14">
+      <div className="mx-auto w-full max-w-[1344px] px-5 py-10 sm:px-6 sm:py-14">
         <h1
           className="mb-8 text-center font-display text-[clamp(2rem,5vw,2.8rem)] leading-tight"
           style={{ color: T.ink }}
