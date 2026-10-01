@@ -27,7 +27,7 @@ export function Sticker({
 }
 
 const BTN =
-  "group relative inline-flex items-center justify-center gap-2 rounded-full font-accent tracking-[0.01em] transition-[transform,box-shadow,background-color] duration-300 ease-[var(--ease-spring)] active:scale-[0.97] active:duration-100";
+  "group relative inline-flex items-center justify-center gap-2 rounded-full font-display tracking-[0.01em] transition-[transform,box-shadow,background-color] duration-300 ease-[var(--ease-spring)] active:scale-[0.97] active:duration-100";
 
 /**
  * Gummy buttons, drawn the way the KV draws its props: a glossy top highlight
@@ -55,7 +55,9 @@ export function ButtonLink({
   const look =
     variant === "primary"
       ? "bg-pink-600 text-white shadow-[inset_0_2px_0_rgb(255_255_255/0.35),inset_0_-4px_0_rgb(120_0_40/0.25),var(--shadow-md)] hover:-translate-y-1 hover:bg-pink-700 hover:shadow-[inset_0_2px_0_rgb(255_255_255/0.35),inset_0_-4px_0_rgb(120_0_40/0.25),var(--shadow-lg)]"
-      : "bg-white/90 text-plum-900 ring-2 ring-pink-200 shadow-[var(--shadow-sm)] hover:-translate-y-1 hover:ring-pink-300 hover:shadow-[var(--shadow-md)]";
+      : // The same gummy depth as the red one: a gloss on top, a pink
+        // lower lip and a soft drop shadow.
+        "bg-white text-plum-900 shadow-[inset_0_2px_0_rgb(255_255_255/0.9),inset_0_-4px_0_rgb(255_139_164/0.35),var(--shadow-md)] hover:-translate-y-1 hover:shadow-[inset_0_2px_0_rgb(255_255_255/0.9),inset_0_-4px_0_rgb(255_139_164/0.35),var(--shadow-lg)]";
   return (
     <a
       href={href}

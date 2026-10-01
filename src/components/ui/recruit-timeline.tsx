@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useId, useRef, useState } from "react";
 import { createPortal } from "react-dom";
 import { animate, motion, useMotionValue, useReducedMotion } from "framer-motion";
 import gsap from "gsap";
@@ -90,7 +90,7 @@ const oneLine = (s: string) => s.replace(/\s*\n\s*/g, " ");
 function LevelNote({ i, className = "", style }: { i: number; className?: string; style?: React.CSSProperties }) {
   return (
     <p
-      className={`pointer-events-none select-none font-hand leading-[1.05] text-plum-900 ${className}`}
+      className={`pointer-events-none select-none font-accent font-normal [font-synthesis:none] leading-[1.08] text-plum-900 ${className}`}
       style={style}
     >
       <span className="block text-[0.72em] text-pink-600">{i === LAST ? "Goal" : `Level ${i + 1}`}</span>
@@ -130,7 +130,7 @@ type Point = { x: number; y: number };
 /** The round's date in the same felt-tip hand as the level notes. */
 function DateLine({ date, big = false }: { date: string; big?: boolean }) {
   return (
-    <div className={`mt-[5.3px] font-hand leading-none ${big ? "text-[20px]" : "text-[18px]"}`} style={{ color: TOKENS.body }}>
+    <div className={`mt-[5.3px] font-accent font-normal [font-synthesis:none] leading-none ${big ? "text-[17px]" : "text-[16px]"}`} style={{ color: TOKENS.body }}>
       {date}
     </div>
   );
@@ -270,30 +270,35 @@ function VideoModal({ url, title, onClose }: { url: string; title: string; onClo
 }
 
 /**
- * The key visual's car seen from above, nose pointing right: the same pink
- * body, crimson tyres, sky-blue glass and butter-yellow panel, with Bi smiling
+ * The key visual's car seen from above, nose pointing right, in red:
+ * plum tyres, sky-blue glass and butter-yellow panel, with Bi smiling
  * up through the sunroof.
  */
 function TopCar({ className = "" }: { className?: string }) {
+  // Gradient ids are per instance: the phone and desktop cars are both in the
+  // page, and a url(#id) that resolves to a gradient inside the hidden one
+  // paints nothing — which left the phone's car see-through.
+  const uid = useId().replace(/:/g, "");
+  const id = (n: string) => `${n}-${uid}`;
   return (
     <svg viewBox="0 0 200 112" className={className} aria-hidden="true">
       <defs>
-        <linearGradient id="tc-body" x1="0" y1="0" x2="0" y2="1">
-          <stop offset="0" stopColor="#FFB3C4" />
-          <stop offset="0.5" stopColor="#FF8FA8" />
-          <stop offset="1" stopColor="#F77595" />
+        <linearGradient id={id("tc-body")} x1="0" y1="0" x2="0" y2="1">
+          <stop offset="0" stopColor="#FF7B7B" />
+          <stop offset="0.5" stopColor="#F03E4E" />
+          <stop offset="1" stopColor="#D2263A" />
         </linearGradient>
-        <linearGradient id="tc-glass" x1="0" y1="0" x2="1" y2="1">
+        <linearGradient id={id("tc-glass")} x1="0" y1="0" x2="1" y2="1">
           <stop offset="0" stopColor="#E4FBFF" />
           <stop offset="1" stopColor="#8FD8F2" />
         </linearGradient>
-        <linearGradient id="tc-panel" x1="0" y1="0" x2="1" y2="0">
+        <linearGradient id={id("tc-panel")} x1="0" y1="0" x2="1" y2="0">
           <stop offset="0" stopColor="#FFE98A" />
           <stop offset="1" stopColor="#FFBE3D" />
         </linearGradient>
-        <radialGradient id="tc-tyre" cx="0.5" cy="0.4" r="0.7">
-          <stop offset="0" stopColor="#FF4F86" />
-          <stop offset="1" stopColor="#C20D52" />
+        <radialGradient id={id("tc-tyre")} cx="0.5" cy="0.4" r="0.7">
+          <stop offset="0" stopColor="#7A2E4E" />
+          <stop offset="1" stopColor="#3F0A26" />
         </radialGradient>
       </defs>
       {/* shadow on the road */}
@@ -305,23 +310,23 @@ function TopCar({ className = "" }: { className?: string }) {
         [34, 88],
         [136, 88],
       ].map(([x, y]) => (
-        <rect key={`${x}-${y}`} x={x} y={y} width="34" height="20" rx="9" fill="url(#tc-tyre)" />
+        <rect key={`${x}-${y}`} x={x} y={y} width="34" height="20" rx="9" fill={`url(#${id("tc-tyre")})`} />
       ))}
       {/* body */}
-      <rect x="6" y="10" width="188" height="88" rx="38" fill="url(#tc-body)" stroke="#EE6A8C" strokeWidth="2" />
+      <rect x="6" y="10" width="188" height="88" rx="38" fill={`url(#${id("tc-body")})`} stroke="#A81B2E" strokeWidth="2" />
       <path d="M40 18 H156" stroke="#fff" strokeOpacity="0.55" strokeWidth="4" strokeLinecap="round" />
       {/* bonnet panel, as on the cover's car */}
-      <path d="M150 26 Q184 30 186 54 Q184 78 150 82 Z" fill="url(#tc-panel)" />
+      <path d="M150 26 Q184 30 186 54 Q184 78 150 82 Z" fill={`url(#${id("tc-panel")})`} />
       {/* headlights and tail lights */}
       <ellipse cx="187" cy="30" rx="4" ry="7" fill="#FFF6C8" />
       <ellipse cx="187" cy="78" rx="4" ry="7" fill="#FFF6C8" />
       <rect x="6" y="24" width="6" height="14" rx="3" fill="#E0115F" />
       <rect x="6" y="70" width="6" height="14" rx="3" fill="#E0115F" />
       {/* windscreen and rear window */}
-      <path d="M126 22 Q148 28 148 54 Q148 80 126 86 Q132 54 126 22 Z" fill="url(#tc-glass)" />
-      <path d="M52 26 Q36 32 36 54 Q36 76 52 82 Q47 54 52 26 Z" fill="url(#tc-glass)" />
+      <path d="M126 22 Q148 28 148 54 Q148 80 126 86 Q132 54 126 22 Z" fill={`url(#${id("tc-glass")})`} />
+      <path d="M52 26 Q36 32 36 54 Q36 76 52 82 Q47 54 52 26 Z" fill={`url(#${id("tc-glass")})`} />
       {/* roof with a sunroof */}
-      <rect x="54" y="20" width="72" height="68" rx="22" fill="#FF9FB4" />
+      <rect x="54" y="20" width="72" height="68" rx="22" fill="#F4545F" />
       <circle cx="90" cy="54" r="25" fill="#7A2E4E" />
       {/* Bi: orange hair, peach face, happy squint */}
       <circle cx="90" cy="54" r="21" fill="#F2A85F" />
@@ -534,7 +539,7 @@ export default function RecruitTimeline() {
                     </div>
                     <div className="px-0.5 py-3.5">
                       <div
-                        className={`whitespace-pre-line font-hand text-[23px] leading-[26.5px] transition-colors duration-300 ${step.date ? "" : "text-center"}`}
+                        className={`whitespace-pre-line font-accent font-normal [font-synthesis:none] text-[19px] leading-[23px] transition-colors duration-300 ${step.date ? "" : "text-center"}`}
                         style={{ color: isActive ? TOKENS.accent : TOKENS.heading }}
                       >
                         {step.name}
@@ -568,7 +573,7 @@ export default function RecruitTimeline() {
                 <LevelNote
                   key={`n${i}`}
                   i={i}
-                  className={`absolute text-[25px] ${
+                  className={`absolute whitespace-nowrap text-[20px] ${
                     onTop ? (at.side === "above-center" ? "text-center" : "text-left") : right ? "text-left" : "text-right"
                   }`}
                   style={{
@@ -725,7 +730,7 @@ function MobileRoad({ onVideo }: { onVideo: (s: Step) => void }) {
         const finish = i === LAST;
         return (
           <li key={step.name} className="relative pb-10 pl-[86px] last:pb-0">
-            <LevelNote i={i} className="mb-1.5 ml-2 -rotate-2 text-[23px]" />
+            <LevelNote i={i} className="mb-1.5 ml-2 -rotate-2 text-[19px]" />
             <span
               ref={(el) => {
                 markerRefs.current[i] = el;
@@ -756,7 +761,7 @@ function MobileRoad({ onVideo }: { onVideo: (s: Step) => void }) {
                 ) : null}
               </div>
               <div className="px-0.5 py-3">
-                <div className={`whitespace-pre-line font-hand text-[21px] leading-[24.5px] ${step.date ? "" : "text-center"}`} style={{ color: TOKENS.heading }}>
+                <div className={`whitespace-pre-line font-accent font-normal [font-synthesis:none] text-[18px] leading-[22px] ${step.date ? "" : "text-center"}`} style={{ color: TOKENS.heading }}>
                   {step.name}
                 </div>
                 {step.date ? <DateLine date={step.date} /> : null}

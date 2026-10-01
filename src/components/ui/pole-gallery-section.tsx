@@ -126,6 +126,7 @@ const CATEGORIES: Category[] = EVENTS.map((cat, c) => ({
     id: `${c}-${i}`,
     title: ev.name,
     description: ev.body,
+    more: ev.more,
     images:
       ev.photos ??
       Array.from(
@@ -317,7 +318,6 @@ export default function PoleGallerySection() {
         >
           <PostFeet />
           <Post />
-          <FootCollar />
           <div
             ref={clusterRef}
             className="absolute"
@@ -478,25 +478,7 @@ function PostFeet() {
   );
 }
 
-/** The green collars the cover's signs are clamped on, above the top sign (the one below sits by the base: FootCollar). */
-/** A green clamp ringing the post a little above its base, as on the cover. */
-function FootCollar() {
-  const w = GEO.postWidth + 10;
-  return (
-    <div
-      aria-hidden="true"
-      className="absolute h-3 rounded-full"
-      style={{
-        left: GEO.postCenter - w / 2,
-        bottom: POST_FOOT + 1,
-        width: w,
-        background: `linear-gradient(90deg, ${TOKENS.collar}, ${TOKENS.collarHi} 40%, ${TOKENS.collar})`,
-        boxShadow: "0 2px 3px rgb(20 60 30 / 0.3)",
-      }}
-    />
-  );
-}
-
+/** The green collars the cover's signs are clamped on, above the top sign. */
 function Collars() {
   const band = `linear-gradient(90deg, ${TOKENS.collar}, ${TOKENS.collarHi} 40%, ${TOKENS.collar})`;
   const w = GEO.postWidth + 8;

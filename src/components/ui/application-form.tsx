@@ -449,8 +449,8 @@ export default function ApplicationForm() {
           type="button"
           onClick={goBack}
           disabled={index === 0 || status === "sending"}
-          className="rounded-full px-5 py-3 text-sm font-semibold transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
-          style={{ color: T.ink, border: `1px solid ${T.line}` }}
+          className="rounded-full border-2 border-pink-300 bg-white px-5 py-3 font-display text-[15px] shadow-[inset_0_2px_0_rgb(255_255_255/0.9),inset_0_-3px_0_rgb(255_139_164/0.35),var(--shadow-sm)] transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
+          style={{ color: T.ink }}
         >
           Quay lại
         </button>
@@ -459,7 +459,7 @@ export default function ApplicationForm() {
           type="button"
           onClick={isLast ? submit : goNext}
           disabled={status === "sending"}
-          className="rounded-full px-7 py-3 text-sm font-bold text-white transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="rounded-full px-7 py-3 font-display text-[15px] text-white shadow-[inset_0_2px_0_rgb(255_255_255/0.35),inset_0_-3px_0_rgb(120_0_40/0.25),var(--shadow-sm)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           style={{ backgroundColor: T.accent }}
         >
           {status === "sending"
@@ -502,7 +502,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       {/* A plain way back, on the banner's road. */}
       <Link
         href="/"
-        className="absolute bottom-[calc(4%-10px)] left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/92 px-5 py-2.5 font-accent text-base text-pink-700 shadow-[var(--shadow-md)] ring-2 ring-pink-200 transition-[transform,background-color] duration-300 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:bg-white sm:px-6 sm:py-3 sm:text-lg"
+        className="absolute bottom-[calc(4%-10px)] left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/92 px-5 py-2.5 font-display text-base text-pink-700 shadow-[var(--shadow-md)] ring-2 ring-pink-200 transition-[transform,background-color] duration-300 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:bg-white sm:px-6 sm:py-3 sm:text-lg"
       >
         <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
           <path d="M19 12H5M11 18l-6-6 6-6" />

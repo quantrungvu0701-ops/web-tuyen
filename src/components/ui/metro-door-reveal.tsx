@@ -13,26 +13,26 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
  * shut, the car slides to bring the next doorway to the middle, and that
  * doorway's doors open on their own once it has arrived.
  *
- * TODO(video): real sources. All three currently point at the same external
- * placeholder clip — this MUST be replaced before the site ships.
+ * The three MVs are on the Hội's YouTube; each doorway shows the thumbnail
+ * and loads the player when clicked.
  */
 const DOORWAYS = [
   {
     id: "gioi-thieu",
-    label: "Tuyển Cộng tác viên thế hệ thứ 24",
-    src: "https://raw.githubusercontent.com/gughigug/run-hero-assets/main/Legs_sprinting_on_pavement_1080p_202608312152.mp4",
+    label: "Teaser Tuyển Cộng tác viên thế hệ thứ 24",
+    src: "https://youtu.be/cPdyT8DuR8w",
     poster: "/hero-background.webp",
   },
   {
     id: "mv",
     label: "Tuyển Cộng tác viên thế hệ thứ 23",
-    src: "https://raw.githubusercontent.com/gughigug/run-hero-assets/main/Legs_sprinting_on_pavement_1080p_202608312152.mp4",
+    src: "https://youtu.be/siigK1Z18mo",
     poster: "/hero-background.webp",
   },
   {
     id: "hau-truong",
     label: "Tuyển Cộng tác viên thế hệ thứ 22",
-    src: "https://raw.githubusercontent.com/gughigug/run-hero-assets/main/Legs_sprinting_on_pavement_1080p_202608312152.mp4",
+    src: "https://youtu.be/VZ1iSv8gsts",
     poster: "/hero-background.webp",
   },
 ];
@@ -75,6 +75,15 @@ const TIMING = {
 /** Horizontal ribbing that runs across the car's steel panels. */
 const CORRUGATION =
   "repeating-linear-gradient(to bottom, rgba(255,255,255,0.20) 0px, rgba(255,255,255,0.20) 1px, rgba(0,0,0,0.045) 2px, rgba(0,0,0,0.045) 7px)";
+
+/** A YouTube link (watch, share, embed or shorts) to its video id. */
+function youTubeId(url: string): string | null {
+  const m =
+    url.match(/youtu\.be\/([\w-]{6,})/) ??
+    url.match(/[?&]v=([\w-]{6,})/) ??
+    url.match(/youtube\.com\/(?:embed|shorts)\/([\w-]{6,})/);
+  return m ? m[1] : null;
+}
 
 type Phase = "open" | "closing" | "sliding";
 
@@ -174,7 +183,7 @@ export default function MetroDoorReveal() {
   return (
     <section
       ref={sectionRef}
-      id="mv" className="relative w-full overflow-hidden pb-28 pt-10 lg:pb-36 lg:pt-12"
+      id="mv" className="relative w-full overflow-hidden pb-10 pt-10 lg:pb-12 lg:pt-12"
     >
       <Decor src="/kv/cloud-1.webp" flip className="left-[6%] top-10 hidden w-56 lg:block" dur="28s" />
       <Decor src="/kv/cloud-6.webp" flip className="-left-14 bottom-2 hidden w-56 opacity-90 lg:block" dur="36s" />
@@ -352,6 +361,16 @@ function MetroDoorway({
   reduced: boolean;
 }) {
   const videoRef = useRef<HTMLVideoElement | null>(null);
+  const yt = youTubeId(src);
+  // A YouTube doorway shows its thumbnail and loads the player only when
+  // asked: three embedded players at once would slow the whole page.
+  const [playing, setPlaying] = useState(false);
+  // Shutting the doors stops the player and puts the thumbnail back.
+  const [wasOpen, setWasOpen] = useState(isOpen);
+  if (wasOpen !== isOpen) {
+    setWasOpen(isOpen);
+    if (!isOpen) setPlaying(false);
+  }
 
   // Only the doorway standing open plays; the rest stay parked so three
   // videos are never decoding at once.
@@ -390,18 +409,51 @@ function MetroDoorway({
       // Doorways waiting down the line are decoration, not content.
       aria-hidden={!isActive}
     >
-      <video
-        ref={videoRef}
-        src={src}
-        poster={poster}
-        muted
-        loop
-        playsInline
-        controls={isOpen}
-        preload={isActive ? "auto" : "none"}
-        aria-label={label}
-        className="absolute inset-0 h-full w-full object-cover"
-      />
+      {yt ? (
+        playing ? (
+          <iframe
+            src={`https://www.youtube.com/embed/${yt}?autoplay=1&rel=0&playsinline=1`}
+            title={label}
+            allow="autoplay; encrypted-media; picture-in-picture; fullscreen"
+            allowFullScreen
+            className="absolute inset-0 h-full w-full"
+          />
+        ) : (
+          <button
+            type="button"
+            onClick={() => setPlaying(true)}
+            disabled={!isOpen}
+            aria-label={`Xem video: ${label}`}
+            className="group absolute inset-0 cursor-pointer"
+          >
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={`https://i.ytimg.com/vi/${yt}/maxresdefault.jpg`}
+              alt=""
+              loading="lazy"
+              className="absolute inset-0 h-full w-full object-cover"
+            />
+            <span className="absolute left-1/2 top-1/2 grid size-20 -translate-x-1/2 -translate-y-1/2 place-items-center rounded-full bg-white/92 text-[#E0115F] shadow-[0_10px_28px_-8px_rgba(0,0,0,0.6)] ring-4 ring-white/40 transition-transform duration-300 group-hover:scale-110">
+              <svg viewBox="0 0 24 24" className="ml-1 size-9" fill="currentColor" aria-hidden="true">
+                <path d="M7 4.5v15a1 1 0 0 0 1.5.86l12.5-7.5a1 1 0 0 0 0-1.72L8.5 3.64A1 1 0 0 0 7 4.5Z" />
+              </svg>
+            </span>
+          </button>
+        )
+      ) : (
+        <video
+          ref={videoRef}
+          src={src}
+          poster={poster}
+          muted
+          loop
+          playsInline
+          controls={isOpen}
+          preload={isActive ? "auto" : "none"}
+          aria-label={label}
+          className="absolute inset-0 h-full w-full object-cover"
+        />
+      )}
 
       {(["left", "right"] as const).map((side) => (
         <div

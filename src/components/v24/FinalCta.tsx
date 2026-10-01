@@ -1,6 +1,6 @@
 /* eslint-disable @next/next/no-img-element */
 import type { CSSProperties } from "react";
-import { APPLY_HREF, GENERATION } from "@/lib/site";
+import { APPLY_HREF } from "@/lib/site";
 import Countdown from "./Countdown";
 import { ArrowRight, ButtonLink, Sticker } from "./ui";
 
@@ -20,7 +20,7 @@ const within = (b: Box): CSSProperties => ({
  */
 export default function FinalCta() {
   return (
-    <section id="ung-tuyen" className="relative isolate overflow-hidden pb-[150px] pt-20 lg:pb-[6.6vw] lg:pt-24">
+    <section id="ung-tuyen" className="relative isolate overflow-x-clip pb-[150px] pt-10 lg:pb-[6.6vw] lg:pt-12">
       {/* The cover again, both mountains and their own clouds, standing on the
           section's foot; its top fades into the page's sky. */}
       <div aria-hidden="true" className="final-scene pointer-events-none absolute bottom-0 -z-10">
@@ -32,14 +32,14 @@ export default function FinalCta() {
 
       {/* The top of the sky: the cover's paraglider and two of its small
           clouds, kept to the sides so the lettering has the middle. */}
-      <div aria-hidden="true" className="pointer-events-none absolute left-[4vw] top-12 -z-10 w-[24vw] max-w-[170px] lg:left-[6vw] lg:top-14 lg:w-[11vw]">
+      <div aria-hidden="true" className="pointer-events-none absolute right-[4vw] top-12 -z-10 w-[24vw] max-w-[170px] lg:right-[6vw] lg:-top-[60px] lg:w-[11vw]">
         <img src="/kv/paraglider.webp" alt="" className="anim-glide w-full" />
       </div>
       <img
         src="/kv/cloud-a.webp"
         alt=""
         aria-hidden="true"
-        className="anim-drift pointer-events-none absolute right-[9vw] top-16 -z-10 hidden w-[12vw] max-w-[190px] lg:block"
+        className="anim-drift pointer-events-none absolute left-[7vw] top-16 -z-10 hidden w-[12vw] max-w-[190px] lg:block"
         style={{ ["--dur" as string]: "24s" }}
       />
       <img
@@ -64,8 +64,8 @@ export default function FinalCta() {
           className="anim-bob w-24 drop-shadow-[0_0_28px_rgb(130_230_100/0.8)] sm:w-28"
         />
         <Sticker className="mt-6 text-[clamp(2.6rem,6.2vw,5.4rem)] sticker-one-line">Đèn xanh rồi, đi thôi!</Sticker>
-        <p className="mt-6 max-w-[46ch] text-pretty text-lg leading-relaxed text-plum-900/80">
-          Cơ hội trở thành Cộng tác viên thế hệ thứ {GENERATION} đang chờ em!
+        <p className="mt-6 max-w-[46ch] text-pretty text-lg lg:max-w-none lg:whitespace-nowrap leading-relaxed text-plum-900/80">
+          Cơ hội trở thành Cộng tác viên Hội Sinh viên trường Đại học Ngoại thương đang chờ đón em!
         </p>
         <p className="mt-8 font-semibold text-pink-700">Hạn điền đơn: 23h59, thứ Ba ngày 20/10/2026</p>
         <Countdown className="mt-3 [zoom:1.2]" />

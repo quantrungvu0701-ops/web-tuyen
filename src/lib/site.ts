@@ -47,11 +47,12 @@ export const ROUNDS: Round[] = [
   },
   {
     name: "Vòng teamwork",
+    photo: "/rounds/vong-3.webp",
     level: "Bye Bistander",
     date: "27/10 – 01/11",
     blurb: "[Một câu giới thiệu vòng teamwork]",
-    // TODO(video): the teamwork round's video link.
-    video: "",
+    // Unlisted on the Hội's YouTube.
+    video: "https://youtu.be/YiYlTfBX5uY",
   },
   {
     name: "Vòng phỏng vấn cá nhân",
@@ -89,7 +90,7 @@ export const CHARACTERS: Character[] = [
     id: "playmaker",
     title: "The Playmaker",
     ban: "Ban Tổ chức",
-    photo: "/ban/to-chuc.webp",
+    photo: "/ban/to-chuc-v3.webp",
     tagline: "Bạn là người khơi mào cuộc chơi.",
     body: "Bạn thích biến một ý tưởng thành một hành trình thật sự. Từ những mảnh ghép nhỏ, bạn sắp xếp mọi thứ để cuộc chơi diễn ra đúng lúc, đúng chỗ và thật đáng nhớ.",
     lamp: "red",
@@ -98,7 +99,7 @@ export const CHARACTERS: Character[] = [
     id: "connector",
     title: "The Connector",
     ban: "Ban Đối ngoại",
-    photo: "/ban/doi-ngoai-v2.webp",
+    photo: "/ban/doi-ngoai-v3.webp",
     tagline: "Bạn kết nối những người đồng đội mới.",
     body: "Bạn luôn biết cách bắt đầu một cuộc trò chuyện, kết nối những con người khác nhau và mở ra những cơ hội bất ngờ. Với bạn, càng nhiều kết nối, cuộc chơi càng thành công.",
     lamp: "green",
@@ -107,6 +108,7 @@ export const CHARACTERS: Character[] = [
     id: "creator",
     title: "The Creator",
     ban: "Ban Truyền thông",
+    photo: "/ban/truyen-thong.webp",
     tagline: "Bạn khiến cuộc chơi được lan rộng.",
     body: "Bạn bắt được những khoảnh khắc đáng nhớ và biến chúng thành điều mọi người muốn xem, muốn chia sẻ, muốn nhớ. Một chút sáng tạo, một chút tinh tế và cả cuộc chơi được kể lại theo cách của bạn.",
     lamp: "yellow",
@@ -115,7 +117,9 @@ export const CHARACTERS: Character[] = [
 
 /* ------------------------------------------------------------------ events */
 
-export type EventItem = { name: string; body: string; photos?: string[] };
+/** A sub-event, shown in a "Xem thêm" window under its parent event. */
+export type EventDetail = { name: string; body: string };
+export type EventItem = { name: string; body: string; photos?: string[]; more?: EventDetail[] };
 export type EventCategory = { title: string; events: EventItem[] };
 
 /** The four categories on the signpost, in sign order. Copy is the brief's. */
@@ -125,8 +129,15 @@ export const EVENTS: EventCategory[] = [
     events: [
       {
         name: "Phong trào Sinh viên 5 tốt",
-        photos: ["/events/sv5t-1.webp", "/events/sv5t-2.webp", "/events/sv5t-3.webp", "/events/sv5t-4.webp"],
-        body: "Hành trình hoàn thiện bản thân trên 5 tiêu chí: Đạo đức tốt – Học tập tốt – Thể lực tốt – Tình nguyện tốt – Hội nhập tốt. Hội Sinh viên trường Đại học Ngoại thương là đơn vị đồng hành cùng sinh viên trên hành trình chinh phục danh hiệu và tôn vinh những tấm gương tiêu biểu, xuất sắc dựa trên 5 tiêu chí trên, với 2 sự kiện chính là \"Tuần lễ Sinh viên 5 tốt\" và \"Lễ Kỷ niệm Ngày truyền thống học sinh, sinh viên và Hội Sinh viên Việt Nam, Tuyên dương Sinh viên 5 tốt các cấp và Khen thưởng Chi hội xuất sắc trường Đại học Ngoại thương\".",
+        more: [
+          { name: "Tuần lễ Sinh viên 5 tốt trường Đại học Ngoại thương", body: "Là chuỗi hoạt động được tổ chức nhằm tạo môi trường rèn luyện toàn diện cho sinh viên trên hành trình chinh phục danh hiệu “Sinh viên 5 tốt”. Thông qua các hoạt động đa dạng, sinh viên có cơ hội giao lưu, trau dồi đạo đức, nâng cao thể lực, phát triển kỹ năng và tăng cường năng lực hội nhập. Chương trình đồng thời giúp sinh viên từng bước hoàn thiện các tiêu chí của danh hiệu, qua đó khuyến khích tinh thần chủ động rèn luyện và phát triển bản thân." },
+          {
+            name: "Lễ Kỷ niệm Ngày truyền thống học sinh, sinh viên và Hội Sinh viên Việt Nam, Tuyên dương Sinh viên 5 tốt các cấp và Khen thưởng Chi hội xuất sắc trường Đại học Ngoại thương",
+            body: "Là chương trình thường niên được tổ chức nhằm tuyên dương những sinh viên đạt danh hiệu “Sinh viên 5 tốt” các cấp - những cá nhân tiêu biểu trong học tập, rèn luyện và hoạt động phong trào. Qua đó, chương trình góp phần tạo động lực để sinh viên Ngoại thương tiếp tục phấn đấu, phát triển toàn diện trong những năm tháng đại học.",
+          },
+        ],
+        photos: ["/events/sv5t-1.webp", "/events/sv5t-2-v2.webp", "/events/sv5t-3-v2.webp", "/events/sv5t-4.webp", "/events/sv5t-5.webp", "/events/sv5t-6.webp"],
+        body: "Hành trình hoàn thiện bản thân trên 5 tiêu chí: Đạo đức tốt – Học tập tốt – Thể lực tốt – Tình nguyện tốt – Hội nhập tốt. Hội Sinh viên trường Đại học Ngoại thương là đơn vị đồng hành cùng sinh viên trên hành trình chinh phục danh hiệu và tôn vinh những tấm gương tiêu biểu, xuất sắc dựa trên 5 tiêu chí trên, với 2 sự kiện chính là \"Tuần lễ Sinh viên 5 tốt trường Đại học Ngoại thương\" và \"Lễ Kỷ niệm Ngày truyền thống học sinh, sinh viên và Hội Sinh viên Việt Nam, Tuyên dương Sinh viên 5 tốt các cấp và Khen thưởng Chi hội xuất sắc trường Đại học Ngoại thương\".",
       },
       {
         name: "Đại hội đại biểu Hội Sinh viên Việt Nam trường Đại học Ngoại thương",
@@ -145,7 +156,7 @@ export const EVENTS: EventCategory[] = [
     events: [
       {
         name: "Duyên dáng Ngoại thương – Beauty & Charm",
-        photos: ["/events/bnc-1.webp", "/events/bnc-2.webp", "/events/bnc-3.webp", "/events/bnc-4.webp"],
+        photos: ["/events/bnc-1.webp", "/events/bnc-2.webp", "/events/bnc-3.webp"],
         body: "Cuộc thi sắc đẹp được tổ chức 2 năm một lần bởi Hội Sinh viên trường Đại học Ngoại thương, với sứ mệnh tìm kiếm và tôn vinh vẻ đẹp, trí tuệ, tài năng và bản lĩnh của sinh viên Ngoại thương. Là một trong những chương trình sân khấu có quy mô lớn, chương trình thu hút sự quan tâm của đông đảo sinh viên trong và ngoài trường cũng như cộng đồng yêu thích các cuộc thi sắc đẹp.",
       },
       {
@@ -170,7 +181,7 @@ export const EVENTS: EventCategory[] = [
     events: [
       {
         name: "Mùa hè Xanh",
-        photos: ["/events/mhx-1.webp", "/events/mhx-2.webp", "/events/mhx-3.webp"],
+        photos: ["/events/mhx-1-v2.webp", "/events/mhx-2.webp", "/events/mhx-3.webp"],
         body: "Được tổ chức thường niên mỗi dịp hè, là chương trình tình nguyện mang đến những trải nghiệm khó quên cho sinh viên trường Đại học Ngoại thương, đồng thời là cầu nối giữa tuổi trẻ Ngoại thương với cộng đồng, xã hội.",
       },
       {
@@ -184,18 +195,19 @@ export const EVENTS: EventCategory[] = [
     title: "Chương trình\nnội bộ",
     events: [
       {
+        name: "Sinh nhật Hội",
+        photos: ["/events/sinh-nhat-1.webp", "/events/sinh-nhat-2.webp", "/events/sinh-nhat-3.webp"],
+        body: "Là dấu mốc hằng năm ghi nhận hành trình cống hiến và trưởng thành của Hội Sinh viên trường Đại học Ngoại thương. Đây là dịp các thế hệ Cộng tác viên cùng trở về, ôn lại những kỷ niệm đáng nhớ, chia sẻ và gắn kết trong không gian ấm cúng, đồng thời tiếp thêm ngọn lửa nhiệt huyết cho nhau để sẵn sàng chào đón một tuổi mới.",
+      },
+      {
         name: "Training toàn Hội",
+        photos: ["/events/training-1.webp", "/events/training-2.webp", "/events/training-3.webp"],
         body: "Là dịp để các BFFers khoá mới cùng nhau làm nóng tinh thần, khám phá văn hoá Hội và gắn kết với đại gia đình BFF. Không chỉ là một buổi training, đây còn là cơ hội để các em làm quen, thể hiện màu sắc riêng và cùng nhau tạo nên những khoảnh khắc thật đáng nhớ.",
       },
       {
         name: "Noel toàn Hội",
         photos: ["/events/noel-1.webp", "/events/noel-2.webp", "/events/noel-3.webp"],
         body: "Đêm hội Giáng sinh thường niên dành riêng cho đại gia đình BFF, nơi những phần quà bất ngờ, những tiết mục văn nghệ và giải trí đặc sắc trở thành kỷ niệm đáng nhớ. Noel cũng là sự kiện đánh dấu mốc đầu tiên trong hành trình của một BFFer mà các \"tân binh\" được tự lên ý tưởng và thực hiện.",
-      },
-      {
-        name: "Sinh nhật Hội",
-        photos: ["/events/sinh-nhat-1.webp", "/events/sinh-nhat-2.webp", "/events/sinh-nhat-3.webp"],
-        body: "Là dấu mốc hằng năm ghi nhận hành trình cống hiến và trưởng thành của Hội Sinh viên trường Đại học Ngoại thương. Đây là dịp các thế hệ Cộng tác viên cùng trở về, ôn lại những kỷ niệm đáng nhớ, chia sẻ và gắn kết trong không gian ấm cúng, đồng thời tiếp thêm ngọn lửa nhiệt huyết cho nhau để sẵn sàng chào đón một tuổi mới.",
       },
       {
         name: "Du xuân",
@@ -232,21 +244,21 @@ export type Leader = {
 };
 
 /** TODO(content): the 8 leaders — presidents and heads of department. */
-const LEADER_NAMES = [
-  "A Lam Duy",
-  "C Mai Trang",
-  "C Hà Linh",
-  "C Uyên Chi",
-  "C Mẫn Nhi",
-  "C Hà My",
-  "C Bích Ngọc",
-  "A Đức Minh",
+const LEADER_NAMES: [string, string, string][] = [
+  ["Anh Lam Duy", "lam-duy", "Được đồng hành cùng Hội, cùng BFF có lẽ là điều tuyệt vời nhất trong khoảng thời gian 4 năm Đại học của anh. Hội chờ đón các em về nhà!"],
+  ["Chị Hà Linh", "ha-linh", "Mong các em hãy thật tự tin, toả sáng và thể hiện được chất riêng của mình. Anh chị chờ các em về nhà!"],
+  ["Chị Uyên Chi", "uyen-chi", "Nếu có một chút hồi hộp, mong các em nhớ rằng anh chị cũng đang háo hức được gặp mình. Cứ tự tin chia sẻ nhé, chúc các em thể hiện thật tốt những điều đã chuẩn bị!"],
+  ["Chị Mai Trang", "mai-trang", "Mong những điều các em đã chuẩn bị đều được thể hiện thật trọn vẹn, những điều bất ngờ đều trở thành bất ngờ dễ thương. Chúc các em may mắn, anh chị chờ đón em!"],
+  ["Chị Mẫn Nhi", "man-nhi", "Hy vọng hành trình sắp tới sẽ cho các em thật nhiều kỷ niệm đẹp, dù kết quả thế nào thì cứ tận hưởng hết mình nhé!"],
+  ["Chị Hà My", "ha-my", "Mong các em sẽ cùng Ban Tổ chức tạo nên thật nhiều chương trình chỉn chu, đáng nhớ và đầy tiếng cười trong những năm tháng ở FTU nhé!"],
+  ["Chị Bích Ngọc", "bich-ngoc", "Hy vọng Ban Truyền thông sẽ là nơi để các em thỏa sức sáng tạo, kể thật nhiều câu chuyện hay và lưu lại những khoảnh khắc đẹp cùng Hội."],
+  ["Anh Đức Minh", "duc-minh", "Chúc các em khi đến với Ban Đối ngoại sẽ có thật nhiều cơ hội gặp gỡ, kết nối và mở ra những trải nghiệm mới thật thú vị!"],
 ];
 
-export const LEADERS: Leader[] = LEADER_NAMES.map((name) => ({
+export const LEADERS: Leader[] = LEADER_NAMES.map(([name, file, message]) => ({
   name,
-  message:
-    "[Lời nhắn gửi tới các em K65 — khoảng hai đến bốn câu, viết như đang nói chuyện trực tiếp với một em tân sinh viên.]",
+  photo: `/leaders/${file}-v3.webp`,
+  message,
 }));
 
 /* ----------------------------------------------------------------- contact */

@@ -6,15 +6,16 @@ import { Sticker } from "./ui";
 /**
  * The column: a photo, then a line of office chatter, three times over — the
  * family, in its own words, drifting up with the pictures.
- * TODO(photos): real BFF photos, 16:9. These are last year's placeholders.
+ * Photos: the family at the office (BFF1–3).
  */
 const COLUMN: AutoSliderItem[] = [
-  { src: "/gallery/p1.jpg", alt: "" },
-  { bubble: "Ai đi ăn trưa không?", side: "left", tone: "bg-white text-plum-900" },
-  { src: "/gallery/p2.jpg", alt: "" },
-  { bubble: "Ai xuống văn phòng không?", side: "right", tone: "bg-pink-600 text-white" },
-  { src: "/gallery/p3.png", alt: "" },
+  // BFF3 leads so BFF1, second in the column, opens in the frame's middle.
+  { src: "/about/bff-3.webp", alt: "" },
   { bubble: "Ai có 3k gửi xe không?", side: "left", tone: "bg-butter text-plum-900" },
+  { src: "/about/bff-1.webp", alt: "" },
+  { bubble: "Ai đi ăn trưa không?", side: "right", tone: "bg-white text-plum-900" },
+  { src: "/about/bff-2-v2.webp", alt: "" },
+  { bubble: "Ai xuống văn phòng không?", side: "left", tone: "bg-pink-600 text-white" },
 ];
 
 export default function About() {
@@ -30,7 +31,7 @@ export default function About() {
             {"Hội\u00A0Sinh\u00A0viên\nlà gì?"}
           </Sticker>
 
-          <div className="mt-8 max-w-[52ch] space-y-5 text-[1.05rem] leading-[1.75] text-plum-900/85">
+          <div className="mt-8 max-w-[52ch] space-y-5 text-justify text-[1.05rem] leading-[1.75] text-plum-900/85">
             <p>
               Hội Sinh viên trường Đại học Ngoại thương được thành lập ngày 15 tháng 03
               năm 2003, là một tổ chức Chính trị - Xã hội trực thuộc Hội Sinh viên Việt
@@ -52,13 +53,26 @@ export default function About() {
 
         <div className="relative mx-auto w-full max-w-[520px]">
           <div className="relative h-[26rem] overflow-hidden rounded-[32px] bg-blush p-3 shadow-[var(--shadow-lg)] ring-1 ring-white sm:h-[32rem]">
-            <ImageAutoSlider images={COLUMN} durationSec={16} />
+            {/* Phones keep the bubbles in the column: there is no room for
+                them to overhang the frame. */}
+            <ImageAutoSlider images={COLUMN} durationSec={26} className="sm:hidden" />
+            <ImageAutoSlider images={COLUMN} durationSec={26} layer="photos" className="hidden sm:block" />
+          </div>
+          {/* The chat bubbles: the same column on a layer above the frame,
+              scrolling in step with the photos, so each one can pop out past
+              the frame's edge instead of reading as a caption inside it. */}
+          <div
+            aria-hidden="true"
+            className="pointer-events-none absolute z-10 hidden h-[calc(26rem-24px)] sm:block sm:h-[calc(32rem-24px)]"
+            style={{ top: 12, left: -58, right: -58 }}
+          >
+            <ImageAutoSlider images={COLUMN} durationSec={26} layer="bubbles" className="px-[70px] pb-0" />
           </div>
           <img
             src="/kv/sign-bff.webp"
             alt=""
             aria-hidden="true"
-            className="absolute -bottom-10 -right-6 w-[38%] rotate-[8deg] drop-shadow-[0_14px_18px_rgb(111_10_61/0.25)]"
+            className="absolute -bottom-10 -right-6 z-20 w-[38%] -rotate-[36deg] drop-shadow-[0_14px_18px_rgb(111_10_61/0.25)]"
           />
         </div>
       </div>

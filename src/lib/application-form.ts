@@ -94,9 +94,9 @@ export const COMMON_FIELDS: readonly Field[] = [
   },
   {
     name: "thanh_tich",
-    label: "Thành tích, giải thưởng mà em đã đạt được? (nếu có)",
+    label: "Thành tích, giải thưởng mà em đã đạt được? (nếu không có, điền N/A)",
     type: "longtext",
-    required: false,
+    required: true,
   },
   {
     name: "mot_tu_ve_ban_than",
@@ -115,7 +115,7 @@ export const COMMON_FIELDS: readonly Field[] = [
   {
     name: "nguyen_vong_1",
     label: "Chọn ban em muốn ứng tuyển",
-    note: "Lưu ý: Mỗi ứng viên được chọn tối đa 02 ban",
+    note: "Mỗi ứng viên được đăng ký tối đa 02 ban. Sau khi hoàn thành chọn Ban nguyện vọng 1, em sẽ tiếp tục chọn Ban nguyện vọng 2 ở mục kế tiếp.",
     type: "radio",
     required: true,
     options: ALL_BAN,

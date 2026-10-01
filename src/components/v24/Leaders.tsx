@@ -64,7 +64,7 @@ export default function Leaders() {
                       )}
                     </span>
                     <span className="block px-1.5 pb-1.5 pt-3">
-                      <span className="block truncate font-display text-[1.02rem] leading-tight text-plum-900">
+                      <span className="block truncate text-center font-display text-[1.02rem] leading-tight text-plum-900">
                         {l.name}
                       </span>
                     </span>

@@ -31,15 +31,24 @@ export const ImageAutoSlider = ({
   images,
   durationSec = 30,
   className = "",
+  layer = "all",
 }: {
   images: AutoSliderItem[];
   /** Seconds for one full pass through the set. Bigger is slower. */
   durationSec?: number;
   className?: string;
+  /**
+   * "photos": the photos alone. "bubbles": the same column with the photos
+   * left as empty space and each chat bubble hung off the corner of the photo
+   * before it — rendered as a separate layer over the photos so the bubbles
+   * can overhang the frame, while scrolling in exact step with it.
+   */
+  layer?: "all" | "photos" | "bubbles";
 }) => {
   // Two copies back to back: the track scrolls exactly one copy, then snaps
   // back to a frame that looks identical.
   const doubled = [...images, ...images];
+  const photosOnly = layer !== "all";
 
   return (
     <>
@@ -63,8 +72,13 @@ export const ImageAutoSlider = ({
         }
         .ias-item { transition: transform .3s ease, filter .3s ease; }
         .ias-item:hover { transform: scale(1.03); filter: brightness(1.06); }
+        @keyframes ias-bubble-pop {
+          0%, 100% { transform: translateY(0) scale(1); }
+          50% { transform: translateY(-1.5px) scale(1.012); }
+        }
+        .ias-bubble { animation: ias-bubble-pop 4s ease-in-out infinite; }
         @media (prefers-reduced-motion: reduce) {
-          .ias-track { animation: none; }
+          .ias-track, .ias-bubble { animation: none; }
         }
       `}</style>
 
@@ -74,21 +88,44 @@ export const ImageAutoSlider = ({
           style={{ ["--ias-duration" as string]: `${durationSec}s` }}
           aria-hidden="true"
         >
-          {doubled.map((item, i) =>
-            "bubble" in item ? (
-              // A chat message: its margin carries the gap like a photo's does,
-              // so the loop maths is unchanged. The corner on the speaker's
-              // side is squared off as the bubble's tail.
-              <div key={i} className={`mb-5 flex ${item.side === "right" ? "justify-end" : "justify-start"}`}>
-                <p
-                  className={`max-w-[80%] rounded-[20px] px-4 py-2.5 text-[15px] font-semibold shadow-[0_10px_24px_-12px_rgba(63,10,38,0.35)] ${
-                    item.side === "right" ? "rounded-br-[6px]" : "rounded-bl-[6px]"
-                  } ${item.tone}`}
-                >
-                  {item.bubble}
-                </p>
-              </div>
-            ) : (
+          {doubled.map((item, i) => {
+            if ("bubble" in item) {
+              if (photosOnly) return null;
+              return (
+                // A chat message in the flow: its margin carries the gap like
+                // a photo's does, so the loop maths is unchanged.
+                <div key={i} className={`mb-5 flex ${item.side === "right" ? "justify-end" : "justify-start"}`}>
+                  <p
+                    className={`max-w-[80%] rounded-[20px] px-4 py-2.5 text-[15px] font-semibold shadow-[0_10px_24px_-12px_rgba(63,10,38,0.35)] ${
+                      item.side === "right" ? "rounded-br-[6px]" : "rounded-bl-[6px]"
+                    } ${item.tone}`}
+                  >
+                    {item.bubble}
+                  </p>
+                </div>
+              );
+            }
+            const next = doubled[i + 1];
+            const bubble = next && "bubble" in next ? next : null;
+            if (layer === "bubbles") {
+              return (
+                <div key={i} className="relative mb-5 aspect-video w-full">
+                  {bubble ? (
+                    <p
+                      className={`ias-bubble absolute bottom-[-18px] whitespace-nowrap rounded-[22px] px-5 py-3 text-[15px] font-semibold shadow-[0_18px_34px_-14px_rgba(63,10,38,0.55)] ring-2 ring-white ${
+                        bubble.side === "right"
+                          ? "right-[-44px] rounded-br-[6px]"
+                          : "left-[-44px] rounded-bl-[6px]"
+                      } ${bubble.tone}`}
+                      style={{ animationDelay: `${(i % 3) * 0.7}s` }}
+                    >
+                      {bubble.bubble}
+                    </p>
+                  ) : null}
+                </div>
+              );
+            }
+            return (
               <div
                 key={i}
                 // The gap lives here, not on the track — see note 2 above.
@@ -103,8 +140,8 @@ export const ImageAutoSlider = ({
                   className="aspect-video w-full select-none object-cover"
                 />
               </div>
-            ),
-          )}
+            );
+          })}
         </div>
       </div>
     </>
