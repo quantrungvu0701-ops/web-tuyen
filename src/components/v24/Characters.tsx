@@ -61,8 +61,8 @@ export default function Characters() {
           <div className="mx-auto w-full lg:col-start-1 lg:row-span-2 lg:row-start-1 lg:mx-0 lg:max-w-none">
             {/* Phones: the pole stood upright, twice the size, and cut off just
                 below the traffic light's arm, so the lamps stay big enough to tap. */}
-            <div className="relative max-lg:-mb-12 max-lg:h-[470px] max-lg:overflow-hidden lg:h-[790px] lg:w-[400px] lg:[clip-path:inset(-100vh_-100vw_-144px_-100vw)]">
-            <div className="relative max-lg:left-[42%] max-lg:top-[10px] max-lg:w-[440px] max-lg:-translate-x-1/2 max-lg:-rotate-[14deg] lg:absolute lg:left-[-423px] lg:top-[-110px] lg:w-[821px]">
+            <div className="relative max-lg:-mb-12 max-lg:h-[520px] max-lg:overflow-hidden lg:h-[790px] lg:w-[400px] lg:[clip-path:inset(-100vh_-100vw_-144px_-100vw)]">
+            <div className="relative max-lg:left-[42%] max-lg:top-[60px] max-lg:w-[440px] max-lg:-translate-x-1/2 max-lg:-rotate-[14deg] lg:absolute lg:left-[-423px] lg:top-[-110px] lg:w-[821px]">
               <img src="/kv/pole-full.webp" alt="" aria-hidden="true" className="w-full" />
               {CHARACTERS.map((ch, i) => {
                 const l = LAMP[ch.lamp];
