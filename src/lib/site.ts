@@ -257,7 +257,7 @@ const LEADER_NAMES: [string, string, string][] = [
 
 export const LEADERS: Leader[] = LEADER_NAMES.map(([name, file, message]) => ({
   name,
-  photo: `/leaders/${file}-v3.webp`,
+  photo: `/leaders/${file}-v5.webp`,
   message,
 }));
 

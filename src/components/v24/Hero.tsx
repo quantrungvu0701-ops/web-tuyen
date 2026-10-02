@@ -121,8 +121,8 @@ function Outlined({ text, fill, stroke }: { text: string; fill: string; stroke: 
   );
 }
 
-/** On laptop widths the column is narrow; the buttons tuck in to share one row. */
-const SNUG = "lg:max-[1400px]:h-14 lg:max-[1400px]:px-7 lg:max-[1400px]:text-[1.2rem]";
+/** On desktop the column between pole and car is narrow; the buttons tuck in to share one row. */
+const SNUG = "lg:h-14 lg:px-7 lg:text-[1.2rem]";
 
 export default function Hero() {
   return (

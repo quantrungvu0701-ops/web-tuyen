@@ -35,7 +35,7 @@ export default function Leaders() {
         <div className="mt-16 grid items-start gap-10 lg:grid-cols-[1.3fr_1fr] lg:gap-12">
           {/* ------------------------------------------------ the lineup */}
           <ul
-            className="-mx-6 flex snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 sm:mx-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:pb-0"
+            className="-mx-6 -mt-4 flex scroll-pl-6 snap-x snap-mandatory gap-4 overflow-x-auto px-6 pb-4 pt-4 sm:mx-0 sm:mt-0 sm:grid sm:grid-cols-4 sm:overflow-visible sm:px-0 sm:pb-0 sm:pt-0"
             aria-label="Chọn bạn đồng hành"
           >
             {LEADERS.map((l, i) => {

@@ -13,7 +13,7 @@ export function isClosed(now: number = Date.now()): boolean {
   return now >= DEADLINE.getTime();
 }
 
-/** e.g. "23:59 ngày 15/10/2026" — for telling people when it shuts. */
+/** e.g. "23:59 ngày 20/10/2026" — for telling people when it shuts. */
 export function formatDeadline(): string {
   const d = DEADLINE;
   const pad = (n: number) => String(n).padStart(2, "0");
