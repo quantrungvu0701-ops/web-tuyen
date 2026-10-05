@@ -19,8 +19,8 @@ import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 const DOORWAYS = [
   {
     id: "gioi-thieu",
-    label: "Teaser Tuyển Cộng tác viên thế hệ thứ 24",
-    src: "https://youtu.be/cPdyT8DuR8w",
+    label: "Tuyển Cộng tác viên thế hệ thứ 24",
+    src: "https://youtu.be/e6MPU9EEANY",
     poster: "/hero-background.webp",
   },
   {
