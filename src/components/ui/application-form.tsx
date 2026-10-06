@@ -19,7 +19,6 @@ import { formatDeadline, isClosed } from "@/lib/deadline";
 /* ------------------------------------------------------------------ tokens */
 
 const T = {
-  bg: "#FFF7EE",
   ink: "#3F0A26",
   muted: "#8A3A5E",
   line: "rgba(63, 10, 38, 0.14)",
@@ -484,7 +483,7 @@ export default function ApplicationForm() {
 
 function Shell({ children }: { children: React.ReactNode }) {
   return (
-    <main className="min-h-dvh w-full" style={{ backgroundColor: T.bg }}>
+    <main className="min-h-dvh w-full">
       {/* The Thế hệ 24 key visual, whole and uncropped — it already carries
           the "Tuyển Cộng tác viên" lettering, so the page heading below
           names the form rather than repeating the campaign. */}

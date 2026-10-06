@@ -89,7 +89,7 @@ export default function Leaders() {
             <span aria-hidden="true" className="block font-display text-[5rem] leading-[0.6] text-pink-200">
               “
             </span>
-            <blockquote className="mt-2 text-pretty text-[1.2rem] font-medium leading-[1.7] sm:text-[1.3rem]">
+            <blockquote className="mt-2 text-justify text-pretty text-[1.2rem] font-medium leading-[1.7] sm:text-[1.3rem]">
               {leader.message}
             </blockquote>
             <figcaption className="mt-8 flex items-center gap-4 border-t border-white/25 pt-6">
