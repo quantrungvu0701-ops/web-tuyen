@@ -444,21 +444,23 @@ export default function ApplicationForm() {
       )}
 
       <div className="mt-7 flex flex-wrap items-center justify-between gap-4">
+        {index > 0 && (
         <button
           type="button"
           onClick={goBack}
-          disabled={index === 0 || status === "sending"}
+          disabled={status === "sending"}
           className="rounded-full border-2 border-pink-300 bg-white px-5 py-3 font-display text-[15px] shadow-[inset_0_2px_0_rgb(255_255_255/0.9),inset_0_-3px_0_rgb(255_139_164/0.35),var(--shadow-sm)] transition-opacity disabled:cursor-not-allowed disabled:opacity-35"
           style={{ color: T.ink }}
         >
           Quay lại
         </button>
+        )}
 
         <button
           type="button"
           onClick={isLast ? submit : goNext}
           disabled={status === "sending"}
-          className="rounded-full px-7 py-3 font-display text-[15px] text-white shadow-[inset_0_2px_0_rgb(255_255_255/0.35),inset_0_-3px_0_rgb(120_0_40/0.25),var(--shadow-sm)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
+          className="ml-auto rounded-full px-7 py-3 font-display text-[15px] text-white shadow-[inset_0_2px_0_rgb(255_255_255/0.35),inset_0_-3px_0_rgb(120_0_40/0.25),var(--shadow-sm)] transition-opacity hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           style={{ backgroundColor: T.accent }}
         >
           {status === "sending"
