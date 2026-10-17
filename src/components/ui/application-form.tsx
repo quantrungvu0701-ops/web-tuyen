@@ -10,6 +10,9 @@ import {
   toSubmission,
   NGUYEN_VONG_2,
   KHONG,
+  DRAFT_KEY,
+  MAIN_SCHEMA,
+  type FormSchema,
   type Answers,
   type Field,
 } from "@/lib/application-form";
@@ -73,12 +76,21 @@ function QuestionField({
 
   return (
     <div className="scroll-mt-28" data-field={field.name}>
+      {field.heading && (
+        <p className="mb-3 text-[15px] font-semibold leading-snug" style={{ color: T.ink }}>
+          {field.heading}
+        </p>
+      )}
+      {field.type === "scale" ? (
+        <ScaleField field={field} value={value} error={error} onChange={onChange} />
+      ) : (
+      <>
       <label
         htmlFor={id}
         className="mb-2 block text-[15px] font-semibold leading-snug"
         style={{ color: T.ink }}
       >
-        {field.label}
+        {field.display ?? field.label}
         {field.required && (
           <span aria-hidden="true" style={{ color: T.accent }}>
             {" *"}
@@ -192,13 +204,97 @@ function QuestionField({
           {error}
         </p>
       )}
+      </>
+      )}
+    </div>
+  );
+}
+
+/** A mark out of 5 on one line: the skill on the left, 1-5 on the right. */
+function ScaleField({
+  field,
+  value,
+  error,
+  onChange,
+}: {
+  field: Field;
+  value: string | string[] | undefined;
+  error: string | null;
+  onChange: (v: string) => void;
+}) {
+  const id = `f-${field.name}`;
+  return (
+    <div>
+      <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-2">
+        <span id={id} className="text-[15px]" style={{ color: T.ink }}>
+          {field.display ?? field.label}
+          {field.required && (
+            <span aria-hidden="true" style={{ color: T.accent }}>
+              {" *"}
+            </span>
+          )}
+        </span>
+        <div
+          role="radiogroup"
+          aria-labelledby={id}
+          aria-describedby={error ? `${id}-err` : undefined}
+          className="flex items-center gap-1.5"
+        >
+          {field.options?.map((option) => {
+            const selected = value === option;
+            return (
+              <button
+                key={option}
+                type="button"
+                role="radio"
+                aria-checked={selected}
+                aria-label={`${option}/5`}
+                onClick={() => onChange(option)}
+                className="grid size-10 place-items-center rounded-lg border text-[15px] transition-colors"
+                style={{
+                  borderColor: selected ? T.accent : error ? T.danger : T.line,
+                  backgroundColor: selected ? T.accent : "#FFFFFF",
+                  color: selected ? "#FFFFFF" : T.ink,
+                  fontWeight: selected ? 700 : 500,
+                }}
+              >
+                {option}
+              </button>
+            );
+          })}
+          <span className="ml-1 text-sm" style={{ color: T.muted }}>
+            /5
+          </span>
+        </div>
+      </div>
+      {error && (
+        <p id={`${id}-err`} className="mt-2 text-sm" style={{ color: T.danger }}>
+          {error}
+        </p>
+      )}
     </div>
   );
 }
 
 /* ---------------------------------------------------------------- the form */
 
-export default function ApplicationForm() {
+type FormProps = {
+  /** localStorage key for this form's autosaved draft. */
+  draftKey?: string;
+  /** Sheet tab the answers land on; left out, the Apps Script's own default. */
+  sheet?: string;
+  /** Where the banner and "Về trang chủ" lead back to. */
+  homeHref?: string;
+  /** The questions; the main form's by default. */
+  schema?: FormSchema;
+};
+
+export default function ApplicationForm({
+  draftKey = DRAFT_KEY,
+  sheet,
+  homeHref = "/",
+  schema = MAIN_SCHEMA,
+}: FormProps = {}) {
   const [answers, setAnswers] = useState<Answers>({});
   const [step, setStep] = useState(0);
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -230,9 +326,9 @@ export default function ApplicationForm() {
     window.addEventListener("pageshow", onPageShow);
     return () => window.removeEventListener("pageshow", onPageShow);
   }, []);
-  const draft = useFormDraft(answers, step, restore);
+  const draft = useFormDraft(answers, step, restore, draftKey);
 
-  const steps = useMemo(() => buildSteps(answers), [answers]);
+  const steps = useMemo(() => buildSteps(answers, schema), [answers, schema]);
   // The step list grows and shrinks as branches open and close, so the index
   // has to be clamped rather than trusted.
   const index = Math.min(step, steps.length - 1);
@@ -317,7 +413,8 @@ export default function ApplicationForm() {
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
           submittedAt: new Date().toISOString(),
-          answers: toSubmission(answers),
+          sheet,
+          answers: toSubmission(answers, schema),
         }),
       });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -342,7 +439,7 @@ export default function ApplicationForm() {
       setStatus("sent");
       // Only now — a draft cleared before the Sheet confirmed would take the
       // applicant's whole afternoon with it.
-      clearDraft();
+      clearDraft(draftKey);
     } catch {
       setStatus("error");
       setSendError(
@@ -355,7 +452,7 @@ export default function ApplicationForm() {
 
   if (isClosed()) {
     return (
-      <Shell>
+      <Shell homeHref={homeHref}>
         <Card>
           <h2 className="mb-3 font-display text-2xl font-semibold" style={{ color: T.ink }}>
             Đã hết hạn nhận đơn
@@ -373,7 +470,7 @@ export default function ApplicationForm() {
 
   if (status === "sent") {
     return (
-      <Shell>
+      <Shell homeHref={homeHref}>
         <Card>
           <div className="flex flex-col items-center text-center">
             <div
@@ -410,7 +507,7 @@ export default function ApplicationForm() {
   /* ----------------------------------------------------------------- form */
 
   return (
-    <Shell>
+    <Shell homeHref={homeHref}>
       <div ref={topRef} className="scroll-mt-6" />
 
 
@@ -483,14 +580,14 @@ export default function ApplicationForm() {
 
 /* ---------------------------------------------------------------- chrome */
 
-function Shell({ children }: { children: React.ReactNode }) {
+function Shell({ children, homeHref }: { children: React.ReactNode; homeHref: string }) {
   return (
     <main className="min-h-dvh w-full">
       {/* The Thế hệ 24 key visual, whole and uncropped — it already carries
           the "Tuyển Cộng tác viên" lettering, so the page heading below
           names the form rather than repeating the campaign. */}
       <div className="relative">
-      <Link href="/" aria-label="Về trang chủ" className="block">
+      <Link href={homeHref} aria-label="Về trang chủ" className="block">
         <Image
           src="/kv/kv-banner.webp"
           alt="Tuyển Cộng tác viên — Hội Sinh viên trường Đại học Ngoại thương, thế hệ thứ 24"
@@ -502,7 +599,7 @@ function Shell({ children }: { children: React.ReactNode }) {
       </Link>
       {/* A plain way back, on the banner's road. */}
       <Link
-        href="/"
+        href={homeHref}
         className="absolute bottom-[calc(4%-10px)] left-1/2 inline-flex -translate-x-1/2 items-center gap-2 rounded-full bg-white/92 px-5 py-2.5 font-display text-base text-pink-700 shadow-[var(--shadow-md)] ring-2 ring-pink-200 transition-[transform,background-color] duration-300 ease-[var(--ease-spring)] hover:-translate-y-0.5 hover:bg-white sm:px-6 sm:py-3 sm:text-lg"
       >
         <svg viewBox="0 0 24 24" className="size-5" fill="none" stroke="currentColor" strokeWidth={2.6} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">

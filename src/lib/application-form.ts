@@ -26,7 +26,7 @@ export const ALL_BAN = [BAN_TO_CHUC, BAN_TRUYEN_THONG, BAN_DOI_NGOAI] as const;
 export type Ban = (typeof ALL_BAN)[number];
 
 export type FieldType =
-  "text" | "longtext" | "email" | "tel" | "url" | "date" | "radio" | "checkbox";
+  "text" | "longtext" | "email" | "tel" | "url" | "date" | "radio" | "checkbox" | "scale";
 
 export type Field = {
   name: string;
@@ -38,7 +38,14 @@ export type Field = {
   placeholder?: string;
   /** A short line under the question. Not part of the Sheet's column header. */
   note?: string;
+  /** Shown instead of `label` on the page, when the column header needs more context. */
+  display?: string;
+  /** A question line above this field, shared by the run of fields under it. */
+  heading?: string;
 };
+
+/** Marks out of 5, for "scale" fields. */
+export const SCALE_1_5 = ["1", "2", "3", "4", "5"] as const;
 
 export type Answers = Record<string, string | string[]>;
 
@@ -230,6 +237,21 @@ export const QUESTIONS_BY_BAN: Record<Ban, readonly Field[]> = {
   [BAN_DOI_NGOAI]: BDN_FIELDS,
 };
 
+/**
+ * One form's question set. The flow around it (nguyện vọng 2, lời nhắn) is
+ * the same for every form; only these lists change.
+ */
+export type FormSchema = {
+  common: readonly Field[];
+  byBan: Record<Ban, readonly Field[]>;
+};
+
+/** The main /dondangky form. */
+export const MAIN_SCHEMA: FormSchema = {
+  common: COMMON_FIELDS,
+  byBan: QUESTIONS_BY_BAN,
+};
+
 export const NGUYEN_VONG_2 = "nguyen_vong_2";
 export const LOI_NHAN = "loi_nhan";
 
@@ -265,7 +287,8 @@ export type Step = {
   terminal?: boolean;
 };
 
-export function buildSteps(answers: Answers): Step[] {
+export function buildSteps(answers: Answers, schema: FormSchema = MAIN_SCHEMA): Step[] {
+  const byBan = schema.byBan;
   const nv1 = answers.nguyen_vong_1 as Ban | undefined;
   const nv2 = answers[NGUYEN_VONG_2] as string | undefined;
 
@@ -273,23 +296,23 @@ export function buildSteps(answers: Answers): Step[] {
     {
       title: "Thông tin chung",
       hint: "Một vài thông tin để anh chị làm quen với em.",
-      fields: COMMON_FIELDS,
+      fields: schema.common,
     },
   ];
 
-  if (nv1 && QUESTIONS_BY_BAN[nv1]) {
+  if (nv1 && byBan[nv1]) {
     steps.push({
       title: "Bộ câu hỏi — Nguyện vọng 1",
       hint: nv1,
-      fields: [...QUESTIONS_BY_BAN[nv1], nguyenVong2Field(nv1)],
+      fields: [...byBan[nv1], nguyenVong2Field(nv1)],
     });
   }
 
-  if (nv2 && nv2 !== KHONG && QUESTIONS_BY_BAN[nv2 as Ban]) {
+  if (nv2 && nv2 !== KHONG && byBan[nv2 as Ban]) {
     steps.push({
       title: "Bộ câu hỏi — Nguyện vọng 2",
       hint: nv2,
-      fields: QUESTIONS_BY_BAN[nv2 as Ban],
+      fields: byBan[nv2 as Ban],
     });
   }
 
@@ -311,14 +334,16 @@ export function buildSteps(answers: Answers): Step[] {
  * branch an applicant took — the same way a Google Form keeps one column per
  * question and leaves the untaken branches blank.
  */
-export const ALL_FIELDS: readonly Field[] = [
-  ...COMMON_FIELDS,
-  nguyenVong2Field(BAN_TO_CHUC),
-  ...BTC_FIELDS,
-  ...BTT_FIELDS,
-  ...BDN_FIELDS,
-  LOI_NHAN_FIELD,
-];
+export function allFields(schema: FormSchema): readonly Field[] {
+  return [
+    ...schema.common,
+    nguyenVong2Field(BAN_TO_CHUC),
+    ...ALL_BAN.flatMap((b) => schema.byBan[b]),
+    LOI_NHAN_FIELD,
+  ];
+}
+
+export const ALL_FIELDS = allFields(MAIN_SCHEMA);
 
 /* ------------------------------------------------------------ validation */
 
@@ -358,20 +383,20 @@ function formatValue(
  * edit, since that Ban may yet come back as nguyện vọng 2, but they must not
  * reach the Sheet under a Ban nobody applied to.
  */
-export function toSubmission(answers: Answers) {
+export function toSubmission(answers: Answers, schema: FormSchema = MAIN_SCHEMA) {
   const chosen = new Set(
     [answers.nguyen_vong_1, answers[NGUYEN_VONG_2]].filter(
-      (b): b is Ban => typeof b === "string" && b in QUESTIONS_BY_BAN,
+      (b): b is Ban => typeof b === "string" && b in schema.byBan,
     ),
   );
   const dropped = new Set(
     ALL_BAN.filter((b) => !chosen.has(b)).flatMap((b) =>
-      QUESTIONS_BY_BAN[b].map((f) => f.name),
+      schema.byBan[b].map((f) => f.name),
     ),
   );
 
   const row: Record<string, string> = {};
-  for (const field of ALL_FIELDS) {
+  for (const field of allFields(schema)) {
     row[field.label] = dropped.has(field.name)
       ? ""
       : formatValue(field, answers[field.name]);

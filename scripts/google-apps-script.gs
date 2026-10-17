@@ -23,6 +23,13 @@
 /** Responses land on this tab; it is created on first submission. */
 var SHEET_NAME = 'Đơn ứng tuyển';
 
+/**
+ * Other forms on the site that share this Sheet, each on its own tab. A form
+ * names its tab in the payload; only names listed here are accepted, so a
+ * stray request cannot create tabs at will.
+ */
+var OTHER_SHEETS = ['donoffonl'];
+
 /** Nobody may apply after this. Keep it in step with src/lib/deadline.ts. */
 var DEADLINE = new Date('2026-10-20T23:59:59+07:00');
 
@@ -44,7 +51,7 @@ function doPost(e) {
       return json({ ok: false, error: 'closed' });
     }
 
-    var sheet = getSheet();
+    var sheet = getSheet(payload.sheet);
     var headers = getHeaders(sheet, answers);
 
     if (ONE_PER_EMAIL) {
@@ -77,9 +84,10 @@ function doGet() {
   return json({ ok: true, status: 'ready' });
 }
 
-function getSheet() {
+function getSheet(requested) {
+  var name = OTHER_SHEETS.indexOf(requested) !== -1 ? requested : SHEET_NAME;
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  return ss.getSheetByName(SHEET_NAME) || ss.insertSheet(SHEET_NAME);
+  return ss.getSheetByName(name) || ss.insertSheet(name);
 }
 
 /**

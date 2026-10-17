@@ -124,7 +124,14 @@ function Outlined({ text, fill, stroke }: { text: string; fill: string; stroke: 
 /** On desktop the column between pole and car is narrow; the buttons tuck in to share one row. */
 const SNUG = "lg:h-14 lg:px-7 lg:text-[1.2rem]";
 
-export default function Hero() {
+type HeroProps = {
+  /** Where "Điền đơn ngay" leads. */
+  applyHref?: string;
+  /** "Hành trình ứng tuyển" — only where there is a journey section to scroll to. */
+  journey?: boolean;
+};
+
+export default function Hero({ applyHref = APPLY_HREF, journey = true }: HeroProps = {}) {
   return (
     <section
       id="top"
@@ -209,13 +216,15 @@ export default function Hero() {
           <Countdown className="enter mt-3" />
 
           <div className="enter mt-7 flex flex-wrap items-center justify-center gap-3" style={{ ["--d" as string]: "0.55s" }}>
-            <ButtonLink href={APPLY_HREF} size="lg" className={SNUG}>
+            <ButtonLink href={applyHref} size="lg" className={SNUG}>
               Điền đơn ngay
               <ArrowRight />
             </ButtonLink>
-            <ButtonLink href="#hanh-trinh" variant="secondary" size="lg" className={SNUG}>
-              Hành trình ứng tuyển
-            </ButtonLink>
+            {journey && (
+              <ButtonLink href="#hanh-trinh" variant="secondary" size="lg" className={SNUG}>
+                Hành trình ứng tuyển
+              </ButtonLink>
+            )}
           </div>
         </div>
       </div>

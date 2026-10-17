@@ -15,9 +15,9 @@ type Draft = {
  * read *and* on write, and a form that white-screens because a draft could not
  * be saved is far worse than one that quietly stops saving.
  */
-function readDraft(): Draft | null {
+function readDraft(key: string): Draft | null {
   try {
-    const raw = window.localStorage.getItem(DRAFT_KEY);
+    const raw = window.localStorage.getItem(key);
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Draft;
     // A draft written against an older question list would restore answers
@@ -30,18 +30,19 @@ function readDraft(): Draft | null {
   }
 }
 
-function writeDraft(draft: Draft): boolean {
+function writeDraft(key: string, draft: Draft): boolean {
   try {
-    window.localStorage.setItem(DRAFT_KEY, JSON.stringify(draft));
+    window.localStorage.setItem(key, JSON.stringify(draft));
     return true;
   } catch {
     return false;
   }
 }
 
-export function clearDraft() {
+/** Each form keeps its own draft under its own key, so two forms never mix. */
+export function clearDraft(key: string = DRAFT_KEY) {
   try {
-    window.localStorage.removeItem(DRAFT_KEY);
+    window.localStorage.removeItem(key);
   } catch {
     /* nothing to do — the draft simply outlives the submission */
   }
@@ -62,6 +63,7 @@ export function useFormDraft(
   answers: Answers,
   step: number,
   setRestored: (draft: { answers: Answers; step: number }) => void,
+  key: string = DRAFT_KEY,
 ) {
   const [state, setState] = useState<DraftState>({
     ready: false,
@@ -83,18 +85,18 @@ export function useFormDraft(
       timer.current = null;
     }
     const savedAt = Date.now();
-    const ok = writeDraft({
+    const ok = writeDraft(key, {
       version: SCHEMA_VERSION,
       savedAt,
       step: latest.current.step,
       answers: latest.current.answers,
     });
     setState((s) => ({ ...s, savedAt: ok ? savedAt : s.savedAt, persistent: ok }));
-  }, []);
+  }, [key]);
 
   // Restore once, on mount.
   useEffect(() => {
-    const draft = readDraft();
+    const draft = readDraft(key);
     if (draft) setRestored({ answers: draft.answers, step: draft.step });
     setState({
       ready: true,
