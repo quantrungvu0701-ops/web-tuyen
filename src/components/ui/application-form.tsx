@@ -287,6 +287,11 @@ type FormProps = {
   homeHref?: string;
   /** The questions; the main form's by default. */
   schema?: FormSchema;
+  /**
+   * One device, many applicants: the thank-you screen offers a fresh form
+   * for the next person.
+   */
+  sharedDevice?: boolean;
 };
 
 export default function ApplicationForm({
@@ -294,6 +299,7 @@ export default function ApplicationForm({
   sheet,
   homeHref = "/",
   schema = MAIN_SCHEMA,
+  sharedDevice = false,
 }: FormProps = {}) {
   const [answers, setAnswers] = useState<Answers>({});
   const [step, setStep] = useState(0);
@@ -438,7 +444,13 @@ export default function ApplicationForm({
 
       setStatus("sent");
       // Only now — a draft cleared before the Sheet confirmed would take the
-      // applicant's whole afternoon with it.
+      // applicant's whole afternoon with it. The answers in memory go too:
+      // the save-on-hide listener would otherwise write them straight back
+      // as a draft, and the next person on this device would open the form
+      // already filled in.
+      setAnswers({});
+      setStep(0);
+      setErrors({});
       clearDraft(draftKey);
     } catch {
       setStatus("error");
@@ -498,6 +510,20 @@ export default function ApplicationForm({
               </a>{" "}
               để không bỏ lỡ bất kỳ thông tin nào nhé, hẹn gặp lại em!
             </p>
+            {sharedDevice && (
+              <button
+                type="button"
+                onClick={() => {
+                  setSendError(null);
+                  setStatus("idle");
+                  window.scrollTo(0, 0);
+                }}
+                className="mt-7 rounded-full px-7 py-3 font-display text-[15px] text-white shadow-[inset_0_2px_0_rgb(255_255_255/0.35),inset_0_-3px_0_rgb(120_0_40/0.25),var(--shadow-sm)] transition-opacity hover:opacity-90"
+                style={{ backgroundColor: T.accent }}
+              >
+                Điền đơn mới
+              </button>
+            )}
           </div>
         </Card>
       </Shell>

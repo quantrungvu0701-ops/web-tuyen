@@ -20,6 +20,7 @@ export default function DonOffOnlFormPage() {
       sheet="donoffonl"
       homeHref="/donoffonl"
       schema={DONOFFONL_SCHEMA}
+      sharedDevice
     />
   );
 }
