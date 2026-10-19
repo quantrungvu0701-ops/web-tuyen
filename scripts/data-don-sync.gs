@@ -130,6 +130,7 @@ function onOpen() {
   SpreadsheetApp.getUi()
     .createMenu('HSV')
     .addItem('Cập nhật dữ liệu', 'syncAll')
+    .addItem('Tạo dropdown chọn Ban trong Respond (chạy 1 lần)', 'setupRespondDropdowns')
     .addToUi();
 }
 
@@ -200,17 +201,17 @@ function readSource(ss, source) {
     var row = display[r];
     if (!row.join('').trim()) continue;
 
-    var t = raw[r][timeCol];
+    var timeText = timeCol === undefined ? '' : String(row[timeCol]).trim();
     var info = {};
     INFO.forEach(function (f) {
       info[f[0]] = pick(row, f[1][0]).replace(/[ 	]+/g, ' ');
     });
 
-    var nv1 = pick(row, NV1);
-    var nv2 = pick(row, NV2);
+    var nv1 = banName(pick(row, NV1));
+    var nv2 = banName(pick(row, NV2));
     var nv = {};
-    if (BANS.indexOf(nv1) !== -1) nv[nv1] = 'NV1';
-    if (nv2 && nv2 !== KHONG && BANS.indexOf(nv2) !== -1) nv[nv2] = 'NV2';
+    if (nv1) nv[nv1] = 'NV1';
+    if (nv2) nv[nv2] = 'NV2';
 
     var ban = {};
     BANS.forEach(function (b) {
@@ -220,8 +221,8 @@ function readSource(ss, source) {
     subs.push({
       source: source,
       row: r + 1,
-      time: t instanceof Date ? t : new Date(t),
-      timeText: row[timeCol],
+      time: submissionTime(timeCol === undefined ? '' : raw[r][timeCol], timeText, r),
+      timeText: timeText,
       info: info,
       nv: nv,
       common: cfg.common.map(function (q) { return pick(row, q); }),
@@ -233,6 +234,25 @@ function readSource(ss, source) {
 }
 
 /* -------------------------------------------------------------- matching */
+
+/**
+ * When a row was sent. A typed-in row may leave the time blank (or type it as
+ * text, dd/mm/yyyy): blank counts as "typed in later than the rows above it",
+ * in the order the rows are written, so the lower row wins a tie.
+ */
+function submissionTime(value, text, rowIndex) {
+  if (value instanceof Date && !isNaN(value)) return value;
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})(?:\s+(\d{1,2}):(\d{2})(?::(\d{2}))?)?$/.exec(text);
+  if (m) return new Date(+m[3], +m[2] - 1, +m[1], +(m[4] || 0), +(m[5] || 0), +(m[6] || 0));
+  return new Date(4102444800000 + rowIndex * 1000);
+}
+
+/** "ban tổ chức ", "BAN TỔ CHỨC" -> the Ban's proper name; anything else -> ''. */
+function banName(text) {
+  var n = norm(text);
+  for (var i = 0; i < BANS.length; i++) if (norm(BANS[i]) === n) return BANS[i];
+  return '';
+}
 
 function norm(s) {
   return String(s || '').normalize('NFC').toLowerCase().replace(/\s+/g, ' ').trim();
@@ -420,7 +440,8 @@ function sideFor(subs) {
 
 /** Stable across re-runs: the person's first submission. */
 function idFor(s) {
-  return (s.source === 'online' ? 'ON' : 'OFF') + '|' + s.timeText + '|' + normEmail(s.info['Email']);
+  var who = normEmail(s.info['Email']) || normPhone(s.info['Số điện thoại']);
+  return (s.source === 'online' ? 'ON' : 'OFF') + '|' + s.timeText + '|' + who + '|' + normName(s.info['Họ và tên']);
 }
 
 /* -------------------------------------------------------------- writing */
@@ -604,4 +625,27 @@ function lighten(hex) {
   var mix = function (c) { return Math.round(c + (255 - c) * 0.82); };
   var r = mix(n >> 16), g = mix((n >> 8) & 255), b = mix(n & 255);
   return '#' + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+}
+
+/**
+ * Makes the two Ban columns of the offline tab in Respond a dropdown, so a
+ * hand-typed row cannot misspell a Ban. This is the one thing the script ever
+ * changes in Respond — formatting only, never an answer — and only when this
+ * menu item is run. Answers the website writes are unaffected.
+ */
+function setupRespondDropdowns() {
+  var sh = SpreadsheetApp.openById(RESPOND_ID).getSheetByName(OFFLINE_TAB);
+  if (!sh) throw new Error('Không thấy tab "' + OFFLINE_TAB + '" trong Respond.');
+  var headers = sh.getRange(1, 1, 1, sh.getLastColumn()).getDisplayValues()[0];
+  var rows = Math.max(sh.getMaxRows() - 1, 1);
+
+  [[NV1, BANS], [NV2, BANS.concat([KHONG])]].forEach(function (q) {
+    var col = -1;
+    headers.forEach(function (h, i) { if (col === -1 && norm(h).indexOf(norm(q[0])) === 0) col = i + 1; });
+    if (col === -1) throw new Error('Không thấy cột "' + q[0] + '".');
+    sh.getRange(2, col, rows, 1).setDataValidation(
+      SpreadsheetApp.newDataValidation().requireValueInList(q[1], true).setAllowInvalid(false).build()
+    );
+  });
+  SpreadsheetApp.getActive().toast('Đã tạo dropdown cho 2 cột chọn Ban trong tab "' + OFFLINE_TAB + '".', 'Xong', 8);
 }
