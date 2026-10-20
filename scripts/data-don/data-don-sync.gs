@@ -150,6 +150,7 @@ function syncAll() {
       return writeBanTab(out, ban, people);
     });
     colorNguyenVong(out);
+    addSummaryRows(out);
     writeReport(out, people, report);
 
     var first = out.getSheetByName('Sheet1') || out.getSheetByName('Trang tính1');
@@ -483,6 +484,7 @@ function writeBanTab(ss, ban, people) {
   var width = header.length;
 
   var sh = ss.getSheetByName(ban) || ss.insertSheet(ban);
+  removeSummaryRow(sh);
   var kept = readMarks(sh);
 
   var rows = [];
@@ -756,4 +758,40 @@ function colLetter(n) {
     n = Math.floor((n - 1) / 26);
   }
   return s;
+}
+
+/**
+ * A live count above each Ban tab: total applicants, then how many are Đỗ,
+ * Pending and Trượt. Added as a new row 1 after the tab is built (everything
+ * below shifts down with it) and removed again at the start of each update.
+ */
+var SUMMARY_MARK = 'Tổng số đơn';
+
+function addSummaryRows(ss) {
+  var sep = argSeparator(ss);
+  BANS.forEach(function (ban) {
+    var sh = ss.getSheetByName(ban);
+    if (!sh) return;
+    sh.insertRowBefore(1);
+    sh.setFrozenRows(3);
+    var cells = [
+      ['="' + SUMMARY_MARK + ': "&COUNTA($C$4:$C)', '#3F0A26', '#FFFFFF'],
+      ['="Đỗ: "&COUNTIF($A$4:$A' + sep + '"Đỗ")', RESULT_COLORS['Đỗ'][0], RESULT_COLORS['Đỗ'][1]],
+      ['="Pending: "&COUNTIF($A$4:$A' + sep + '"Pending")', RESULT_COLORS['Pending'][0], RESULT_COLORS['Pending'][1]],
+      ['="Trượt: "&COUNTIF($A$4:$A' + sep + '"Trượt")', RESULT_COLORS['Trượt'][0], RESULT_COLORS['Trượt'][1]],
+    ];
+    cells.forEach(function (c, i) {
+      sh.getRange(1, i + 1).setFormula(c[0]).setBackground(c[1]).setFontColor(c[2])
+        .setFontWeight('bold').setHorizontalAlignment('center').setVerticalAlignment('middle');
+    });
+    sh.setRowHeight(1, 30);
+  });
+}
+
+function removeSummaryRow(sh) {
+  if (sh.getMaxRows() < 2) return;
+  if (String(sh.getRange(1, 1).getDisplayValue()).indexOf(SUMMARY_MARK) === 0) {
+    sh.setFrozenRows(0);
+    sh.deleteRow(1);
+  }
 }
