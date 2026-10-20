@@ -149,6 +149,7 @@ function syncAll() {
     var counts = BANS.map(function (ban) {
       return writeBanTab(out, ban, people);
     });
+    colorNguyenVong(out);
     writeReport(out, people, report);
 
     var first = out.getSheetByName('Sheet1') || out.getSheetByName('Trang tính1');
@@ -669,4 +670,69 @@ function setupRespondDropdowns() {
     );
   });
   SpreadsheetApp.getActive().toast('Đã tạo dropdown cho 2 cột chọn Ban trong tab "' + OFFLINE_TAB + '".', 'Xong', 8);
+}
+
+/**
+ * NV1 / NV2 take the colour of that Ban's verdict, live: when Ban Tổ chức
+ * marks someone Đỗ, "Ban Tổ chức" in their NV columns turns green in every
+ * tab, so the other Ban sees it while deciding. Only the verdicts colour it —
+ * Off / Onl + Off say how they applied, not how they did.
+ *
+ * Conditional formatting cannot point at another tab directly, so each rule
+ * looks the applicant up by ID through INDIRECT.
+ */
+var NV_COLOR_RESULTS = ['Trượt', 'Pending', 'Đỗ'];
+
+function colorNguyenVong(ss) {
+  var tabs = {};
+  BANS.forEach(function (ban) {
+    var sh = ss.getSheetByName(ban);
+    if (!sh || sh.getLastRow() < 3) return;
+    var header = sh.getRange(2, 1, 1, sh.getLastColumn()).getValues()[0];
+    tabs[ban] = {
+      sh: sh,
+      rows: sh.getLastRow() - 2,
+      id: colLetter(header.indexOf('ID') + 1),
+      result: colLetter(header.indexOf('Kết quả vòng 1') + 1),
+      nv: [header.indexOf('Nguyện vọng 1') + 1, header.indexOf('Nguyện vọng 2') + 1],
+    };
+  });
+
+  Object.keys(tabs).forEach(function (ban) {
+    var t = tabs[ban];
+    var rules = t.sh.getConditionalFormatRules();
+    t.nv.forEach(function (col) {
+      if (col < 1) return;
+      var range = t.sh.getRange(3, col, t.rows, 1);
+      var cell = '$' + colLetter(col) + '3';
+      Object.keys(tabs).forEach(function (other) {
+        var o = tabs[other];
+        var name = "'" + other + "'";
+        NV_COLOR_RESULTS.forEach(function (res) {
+          var formula =
+            '=AND(ISNUMBER(SEARCH("' + other + '",' + cell + ')),' +
+            'IFERROR(INDEX(INDIRECT("' + name + '!' + o.result + ':' + o.result + '"),' +
+            'MATCH($' + t.id + '3,INDIRECT("' + name + '!' + o.id + ':' + o.id + '"),0))="' + res + '",FALSE))';
+          rules.push(SpreadsheetApp.newConditionalFormatRule()
+            .whenFormulaSatisfied(formula)
+            .setBackground(RESULT_COLORS[res][0])
+            .setFontColor(RESULT_COLORS[res][1])
+            .setBold(true)
+            .setRanges([range])
+            .build());
+        });
+      });
+    });
+    t.sh.setConditionalFormatRules(rules);
+  });
+}
+
+function colLetter(n) {
+  var s = '';
+  while (n > 0) {
+    var m = (n - 1) % 26;
+    s = String.fromCharCode(65 + m) + s;
+    n = Math.floor((n - 1) / 26);
+  }
+  return s;
 }
