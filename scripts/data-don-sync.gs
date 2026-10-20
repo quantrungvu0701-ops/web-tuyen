@@ -424,7 +424,7 @@ function buildPerson(subs, report) {
 function sideFor(subs) {
   if (!subs.length) return null;
   var latest = subs[subs.length - 1];
-  var side = { time: latest.timeText, common: latest.common, loiNhan: latest.loiNhan, ban: {}, nv: {}, times: {} };
+  var side = { time: latest.timeText, common: latest.common, loiNhan: latest.loiNhan, ban: {}, nv: {}, times: {}, order: nvOrder(latest) };
   BANS.forEach(function (b) {
     for (var i = subs.length - 1; i >= 0; i--) {
       if (subs[i].nv[b]) {
@@ -438,6 +438,25 @@ function sideFor(subs) {
   return side;
 }
 
+/** [NV1, NV2] of one submission, in the order the applicant chose them. */
+function nvOrder(s) {
+  var order = ['', ''];
+  Object.keys(s.nv).forEach(function (b) { order[s.nv[b] === 'NV1' ? 0 : 1] = b; });
+  return order;
+}
+
+/**
+ * The person's NV1 / NV2 for the info columns — the same in every Ban tab.
+ * Online and offline usually agree; when they don't, both are shown, tagged.
+ */
+function nvText(p, i) {
+  var on = p.online ? p.online.order[i] : '';
+  var off = p.offline ? p.offline.order[i] : '';
+  if (!p.online) return off;
+  if (!p.offline || on === off) return on;
+  return [on && on + ' (Onl)', off && off + ' (Off)'].filter(String).join('\n');
+}
+
 /** Stable across re-runs: the person's first submission. */
 function idFor(s) {
   var who = normEmail(s.info['Email']) || normPhone(s.info['Số điện thoại']);
@@ -448,16 +467,16 @@ function idFor(s) {
 
 function writeBanTab(ss, ban, people) {
   var on = SOURCES.online, off = SOURCES.offline;
-  var onCols = ['Thời gian gửi', 'Nguyện vọng']
+  var onCols = ['Thời gian gửi']
     .concat(['Hoạt động ngoại khóa', 'Thành tích, giải thưởng', '1 từ về bản thân', 'Thành tựu cá nhân'])
     .concat(on.ban[ban]).concat(['Lời nhắn']);
-  var offCols = ['Thời gian gửi', 'Nguyện vọng']
+  var offCols = ['Thời gian gửi']
     .concat(['Hoạt động ngoại khóa', '1 từ về bản thân'])
     .concat(off.ban[ban].map(function (q) {
       return q.replace('Em hãy chấm điểm những kỹ năng về truyền thông sau đây? ', 'Chấm điểm ');
     }))
     .concat(['Lời nhắn']);
-  var infoCols = INFO.map(function (f) { return f[0]; });
+  var infoCols = INFO.map(function (f) { return f[0]; }).concat(['Nguyện vọng 1', 'Nguyện vọng 2']);
   var lead = ['Kết quả vòng 1', 'Ghi chú'];
   var header = lead.concat(infoCols, onCols, offCols, ['ID']);
   var width = header.length;
@@ -478,14 +497,18 @@ function writeBanTab(ss, ban, people) {
     var result = AUTO_RESULTS.indexOf(mark.result) !== -1 ? def : mark.result;
 
     var row = [result, mark.note];
-    infoCols.forEach(function (k) { row.push(k === 'Số điện thoại' ? phoneText(p.info[k]) : p.info[k]); });
+    infoCols.forEach(function (k) {
+      if (k === 'Nguyện vọng 1') row.push(nvText(p, 0));
+      else if (k === 'Nguyện vọng 2') row.push(nvText(p, 1) || KHONG);
+      else row.push(k === 'Số điện thoại' ? phoneText(p.info[k]) : p.info[k]);
+    });
     if (o) {
-      row = row.concat([o.times[ban], o.nv[ban]], o.common, o.ban[ban], [o.loiNhan]);
+      row = row.concat([o.times[ban]], o.common, o.ban[ban], [o.loiNhan]);
     } else {
       row = row.concat(blank(onCols.length));
     }
     if (f) {
-      row = row.concat([f.times[ban], f.nv[ban]], f.common, f.ban[ban], [f.loiNhan]);
+      row = row.concat([f.times[ban]], f.common, f.ban[ban], [f.loiNhan]);
     } else {
       row = row.concat(blank(offCols.length));
     }
@@ -540,10 +563,8 @@ function writeBanTab(ss, ban, people) {
   for (var c = infoStart; c < onStart; c++) sh.setColumnWidth(c, 150);
   [[onStart, onCols.length], [offStart, offCols.length]].forEach(function (g) {
     sh.setColumnWidth(g[0], 140);
-    sh.setColumnWidth(g[0] + 1, 90);
-    for (var i = 2; i < g[1]; i++) sh.setColumnWidth(g[0] + i, 300);
+    for (var i = 1; i < g[1]; i++) sh.setColumnWidth(g[0] + i, 300);
   });
-  sh.getRange(2, onStart, body + 1, 2).setWrap(true);
   sh.hideColumns(width);
 
   if (rows.length) {
