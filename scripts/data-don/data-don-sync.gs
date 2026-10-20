@@ -678,74 +678,67 @@ function setupRespondDropdowns() {
  * tab, so the other Ban sees it while deciding. Only the verdicts colour it —
  * Off / Onl + Off say how they applied, not how they did.
  *
- * Two hidden helper columns after ID look the verdict up with a plain formula
- * (Apps Script writes formulas in English syntax whatever the Sheet's
- * locale). The colour rules then only compare a cell in the same row — no
- * cross-tab lookup and no argument separators, which conditional formatting
- * handles unreliably, especially in a vi_VN Sheet.
+ * Each rule reads column A of the other Ban's tab, finding the applicant by
+ * the hidden ID (conditional formatting can only see another tab through
+ * INDIRECT). Formulas are written in the Sheet's own syntax: a vi_VN Sheet
+ * uses "," as the decimal mark and ";" between arguments, and a rule written
+ * with "," silently never matches.
  */
 var NV_COLOR_RESULTS = ['Trượt', 'Pending', 'Đỗ'];
 
 function colorNguyenVong(ss) {
+  var sep = argSeparator(ss);
   var tabs = {};
   BANS.forEach(function (ban) {
     var sh = ss.getSheetByName(ban);
     if (!sh || sh.getLastRow() < 3) return;
     var header = sh.getRange(2, 1, 1, sh.getLastColumn()).getValues()[0];
-    var idCol = header.indexOf('ID') + 1;
     tabs[ban] = {
       sh: sh,
       rows: sh.getLastRow() - 2,
-      idCol: idCol,
-      id: colLetter(idCol),
-      result: colLetter(header.indexOf('Kết quả vòng 1') + 1),
+      id: colLetter(header.indexOf('ID') + 1),
       nv: [header.indexOf('Nguyện vọng 1') + 1, header.indexOf('Nguyện vọng 2') + 1],
     };
   });
 
   Object.keys(tabs).forEach(function (ban) {
     var t = tabs[ban];
-    var sh = t.sh;
-    var helper = t.idCol + 1;
-    if (sh.getMaxColumns() < helper + 1) sh.insertColumnsAfter(sh.getMaxColumns(), helper + 1 - sh.getMaxColumns());
-
-    var nvValues = t.nv.map(function (col) {
-      return col > 0 ? sh.getRange(3, col, t.rows, 1).getDisplayValues() : null;
-    });
-    var formulas = [];
-    for (var r = 0; r < t.rows; r++) {
-      var rowNo = r + 3;
-      formulas.push(t.nv.map(function (col, i) {
-        if (!nvValues[i]) return '';
-        var target = firstBan(nvValues[i][r][0]);
-        var o = target && tabs[target];
-        if (!o) return '';
-        var name = "'" + target + "'";
-        return '=IFERROR(INDEX(' + name + '!$' + o.result + ':$' + o.result + ',MATCH($' + t.id + rowNo + ',' +
-          name + '!$' + o.id + ':$' + o.id + ',0)),"")';
-      }));
-    }
-    sh.getRange(2, helper, 1, 2).setValues([['KQ NV1', 'KQ NV2']]);
-    sh.getRange(3, helper, t.rows, 2).setFormulas(formulas);
-    sh.hideColumns(helper, 2);
-
-    var rules = sh.getConditionalFormatRules();
-    t.nv.forEach(function (col, i) {
+    var rules = t.sh.getConditionalFormatRules();
+    t.nv.forEach(function (col) {
       if (col < 1) return;
-      var range = sh.getRange(3, col, t.rows, 1);
-      var ref = '$' + colLetter(helper + i) + '3';
-      NV_COLOR_RESULTS.forEach(function (res) {
-        rules.push(SpreadsheetApp.newConditionalFormatRule()
-          .whenFormulaSatisfied('=' + ref + '="' + res + '"')
-          .setBackground(RESULT_COLORS[res][0])
-          .setFontColor(RESULT_COLORS[res][1])
-          .setBold(true)
-          .setRanges([range])
-          .build());
+      var range = t.sh.getRange(3, col, t.rows, 1);
+      var cell = '$' + colLetter(col) + '3';
+      Object.keys(tabs).forEach(function (other) {
+        var o = tabs[other];
+        var name = "'" + other + "'";
+        NV_COLOR_RESULTS.forEach(function (res) {
+          var formula =
+            '=AND(ISNUMBER(SEARCH("' + other + '"' + sep + cell + '))' + sep +
+            'IFERROR(INDEX(INDIRECT("' + name + '!A:A")' + sep +
+            'MATCH($' + t.id + '3' + sep + 'INDIRECT("' + name + '!' + o.id + ':' + o.id + '")' + sep + '0))="' + res + '"' + sep + 'FALSE))';
+          rules.push(SpreadsheetApp.newConditionalFormatRule()
+            .whenFormulaSatisfied(formula)
+            .setBackground(RESULT_COLORS[res][0])
+            .setFontColor(RESULT_COLORS[res][1])
+            .setBold(true)
+            .setRanges([range])
+            .build());
+        });
       });
     });
-    sh.setConditionalFormatRules(rules);
+    t.sh.setConditionalFormatRules(rules);
   });
+}
+
+/** "," or ";" — found by asking the Sheet itself to add 1 and 2. */
+function argSeparator(ss) {
+  var sh = ss.getSheetByName('Kiểm tra') || ss.getSheets()[0];
+  var cell = sh.getRange(1, sh.getMaxColumns());
+  cell.setFormula('=SUM(1,2)');
+  SpreadsheetApp.flush();
+  var ok = cell.getValue() === 3;
+  cell.clearContent();
+  return ok ? ',' : ';';
 }
 
 /** The first Ban named in an NV cell ("Ban Tổ chức (Onl)\n..." -> "Ban Tổ chức"). */
