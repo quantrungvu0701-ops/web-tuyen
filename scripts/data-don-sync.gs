@@ -678,8 +678,11 @@ function setupRespondDropdowns() {
  * tab, so the other Ban sees it while deciding. Only the verdicts colour it —
  * Off / Onl + Off say how they applied, not how they did.
  *
- * Conditional formatting cannot point at another tab directly, so each rule
- * looks the applicant up by ID through INDIRECT.
+ * Two hidden helper columns after ID look the verdict up with a plain formula
+ * (Apps Script writes formulas in English syntax whatever the Sheet's
+ * locale). The colour rules then only compare a cell in the same row — no
+ * cross-tab lookup and no argument separators, which conditional formatting
+ * handles unreliably, especially in a vi_VN Sheet.
  */
 var NV_COLOR_RESULTS = ['Trượt', 'Pending', 'Đỗ'];
 
@@ -689,10 +692,12 @@ function colorNguyenVong(ss) {
     var sh = ss.getSheetByName(ban);
     if (!sh || sh.getLastRow() < 3) return;
     var header = sh.getRange(2, 1, 1, sh.getLastColumn()).getValues()[0];
+    var idCol = header.indexOf('ID') + 1;
     tabs[ban] = {
       sh: sh,
       rows: sh.getLastRow() - 2,
-      id: colLetter(header.indexOf('ID') + 1),
+      idCol: idCol,
+      id: colLetter(idCol),
       result: colLetter(header.indexOf('Kết quả vòng 1') + 1),
       nv: [header.indexOf('Nguyện vọng 1') + 1, header.indexOf('Nguyện vọng 2') + 1],
     };
@@ -700,31 +705,54 @@ function colorNguyenVong(ss) {
 
   Object.keys(tabs).forEach(function (ban) {
     var t = tabs[ban];
-    var rules = t.sh.getConditionalFormatRules();
-    t.nv.forEach(function (col) {
+    var sh = t.sh;
+    var helper = t.idCol + 1;
+    if (sh.getMaxColumns() < helper + 1) sh.insertColumnsAfter(sh.getMaxColumns(), helper + 1 - sh.getMaxColumns());
+
+    var nvValues = t.nv.map(function (col) {
+      return col > 0 ? sh.getRange(3, col, t.rows, 1).getDisplayValues() : null;
+    });
+    var formulas = [];
+    for (var r = 0; r < t.rows; r++) {
+      var rowNo = r + 3;
+      formulas.push(t.nv.map(function (col, i) {
+        if (!nvValues[i]) return '';
+        var target = firstBan(nvValues[i][r][0]);
+        var o = target && tabs[target];
+        if (!o) return '';
+        var name = "'" + target + "'";
+        return '=IFERROR(INDEX(' + name + '!$' + o.result + ':$' + o.result + ',MATCH($' + t.id + rowNo + ',' +
+          name + '!$' + o.id + ':$' + o.id + ',0)),"")';
+      }));
+    }
+    sh.getRange(2, helper, 1, 2).setValues([['KQ NV1', 'KQ NV2']]);
+    sh.getRange(3, helper, t.rows, 2).setFormulas(formulas);
+    sh.hideColumns(helper, 2);
+
+    var rules = sh.getConditionalFormatRules();
+    t.nv.forEach(function (col, i) {
       if (col < 1) return;
-      var range = t.sh.getRange(3, col, t.rows, 1);
-      var cell = '$' + colLetter(col) + '3';
-      Object.keys(tabs).forEach(function (other) {
-        var o = tabs[other];
-        var name = "'" + other + "'";
-        NV_COLOR_RESULTS.forEach(function (res) {
-          var formula =
-            '=AND(ISNUMBER(SEARCH("' + other + '",' + cell + ')),' +
-            'IFERROR(INDEX(INDIRECT("' + name + '!' + o.result + ':' + o.result + '"),' +
-            'MATCH($' + t.id + '3,INDIRECT("' + name + '!' + o.id + ':' + o.id + '"),0))="' + res + '",FALSE))';
-          rules.push(SpreadsheetApp.newConditionalFormatRule()
-            .whenFormulaSatisfied(formula)
-            .setBackground(RESULT_COLORS[res][0])
-            .setFontColor(RESULT_COLORS[res][1])
-            .setBold(true)
-            .setRanges([range])
-            .build());
-        });
+      var range = sh.getRange(3, col, t.rows, 1);
+      var ref = '$' + colLetter(helper + i) + '3';
+      NV_COLOR_RESULTS.forEach(function (res) {
+        rules.push(SpreadsheetApp.newConditionalFormatRule()
+          .whenFormulaSatisfied('=' + ref + '="' + res + '"')
+          .setBackground(RESULT_COLORS[res][0])
+          .setFontColor(RESULT_COLORS[res][1])
+          .setBold(true)
+          .setRanges([range])
+          .build());
       });
     });
-    t.sh.setConditionalFormatRules(rules);
+    sh.setConditionalFormatRules(rules);
   });
+}
+
+/** The first Ban named in an NV cell ("Ban Tổ chức (Onl)\n..." -> "Ban Tổ chức"). */
+function firstBan(text) {
+  var first = String(text || '').split('\n')[0];
+  for (var i = 0; i < BANS.length; i++) if (first.indexOf(BANS[i]) !== -1) return BANS[i];
+  return '';
 }
 
 function colLetter(n) {
