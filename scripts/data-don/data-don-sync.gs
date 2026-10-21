@@ -819,6 +819,11 @@ function writeResultTabs(ss) {
       .setFontWeight('bold').setBackground('#3F0A26').setFontColor('#FFFFFF');
     sh.getRange(2, 3, Math.max(sh.getMaxRows() - 1, 1), 1).setNumberFormat('@');
     sh.getRange(2, 1).setFormula(t[1]);
+    // The count, beside the list: names are text, so "?*" counts every row
+    // and skips the "" an empty list leaves behind.
+    sh.getRange(1, 5).setFormula('="Tổng: "&COUNTIF($A$2:$A' + sep + '"?*")')
+      .setFontWeight('bold').setBackground('#F3E3EA').setFontColor('#3F0A26').setHorizontalAlignment('center');
+    sh.setColumnWidth(5, 120);
     sh.setFrozenRows(1);
     sh.setColumnWidth(1, 220);
     sh.setColumnWidth(2, 280);
