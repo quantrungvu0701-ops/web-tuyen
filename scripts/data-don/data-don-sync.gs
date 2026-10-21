@@ -292,10 +292,28 @@ var EXCLUDE_EMAILS = ['quantrungvu0701@gmail.com', 'ok@gmail.com'];
 
 /**
  * Decisions taken by hand: each entry is one person. Every submission whose
- * phone or email matches any key in the entry is merged into that person,
- * whatever the name or birthday says. Keys: 'p:<phone>' or 'e:<email>'.
+ * phone or email matches any of `keys` is merged into that person, whatever
+ * the name or birthday says. Keys: 'p:<phone>' or 'e:<email>'. Optional
+ * `name` fixes the name shown; optional `bans` fixes their Ban (NV1, NV2),
+ * overriding what the submissions chose.
  */
-var MANUAL_SAME = [];
+var MANUAL_SAME = [
+  { keys: ['p:0936321269'], name: 'Nguyễn Nam Thăng' },
+  { keys: ['p:0989605882'], name: 'Nghiêm Lê Vy', bans: [BAN_TC, BAN_DN] },
+  { keys: ['e:docamnhi08@gmail.com'] },
+  { keys: ['e:haikhanhle08@gmail.com'] },
+  { keys: ['p:0865485866'] },
+];
+
+/** Whether submission `s` belongs to manual entry `entry`. */
+function manualHit(entry, s) {
+  var p = normPhone(s.info['Số điện thoại']);
+  var e = normEmail(s.info['Email']);
+  return entry.keys.some(function (k) {
+    var kind = k.slice(0, 2), val = k.slice(2);
+    return kind === 'p:' ? (p && normPhone(val) === p) : (e && normEmail(val) === e);
+  });
+}
 
 /** 6/1/2008, 06/01/2008 and a real date cell are one birthday. */
 function normDob(s) {
@@ -327,13 +345,8 @@ function groupPeople(subs) {
     var x = norm(s.sex);
     if (n && p && d && x) link('id:' + [n, p, d, x].join('|'), i);
 
-    var e = normEmail(s.info['Email']);
     MANUAL_SAME.forEach(function (entry, m) {
-      var hit = entry.some(function (k) {
-        var kind = k.slice(0, 2), val = k.slice(2);
-        return kind === 'p:' ? (p && normPhone(val) === p) : (e && normEmail(val) === e);
-      });
-      if (hit) link('manual:' + m, i);
+      if (manualHit(entry, s)) link('manual:' + m, i);
     });
   });
 
@@ -342,7 +355,19 @@ function groupPeople(subs) {
     var g = find(i);
     (groups[g] = groups[g] || []).push(s);
   });
-  var people = Object.keys(groups).map(function (g) { return buildPerson(groups[g]); });
+  var people = Object.keys(groups).map(function (g) {
+    var person = buildPerson(groups[g]);
+    MANUAL_SAME.forEach(function (entry) {
+      if (!person.subs.some(function (s) { return manualHit(entry, s); })) return;
+      if (entry.name) person.info['Họ và tên'] = entry.name;
+      if (entry.bans) {
+        person.bans = {};
+        entry.bans.forEach(function (b) { person.bans[b] = true; });
+        person.nvOverride = entry.bans;
+      }
+    });
+    return person;
+  });
   people.sort(function (a, b) { return a.firstTime - b.firstTime; });
   return people;
 }
@@ -412,6 +437,7 @@ function nvOrder(s) {
  * Online and offline usually agree; when they don't, both are shown, tagged.
  */
 function nvText(p, i) {
+  if (p.nvOverride) return p.nvOverride[i] || '';
   var on = p.online ? p.online.order[i] : '';
   var off = p.offline ? p.offline.order[i] : '';
   if (!p.online) return off;
@@ -449,6 +475,7 @@ function writeBanTab(ss, ban, people) {
 
   var rows = [];
   people.forEach(function (p) {
+    if (!p.bans[ban]) return;
     var o = p.online && p.online.ban[ban] ? p.online : null;
     var f = p.offline && p.offline.ban[ban] ? p.offline : null;
     if (!o && !f) return;
@@ -748,7 +775,14 @@ var RESULT_TABS = [
   ['Đỗ BDN', BAN_DN],
   ['Đỗ BTT', BAN_TT],
 ];
+var FAIL_TABS = [
+  ['Trượt BTC', BAN_TC],
+  ['Trượt BDN', BAN_DN],
+  ['Trượt BTT', BAN_TT],
+];
 var PASS_WHERE = "Col1 is not null and Col1 <> 'Pending' and Col1 <> 'Trượt'";
+/** Per Ban, "trượt" is everyone in that tab not passed there: blank, Pending or Trượt. */
+var FAIL_WHERE = "Col3 is not null and (Col1 is null or Col1 = 'Pending' or Col1 = 'Trượt')";
 
 function writeResultTabs(ss) {
   var sep = argSeparator(ss);
@@ -766,14 +800,19 @@ function writeResultTabs(ss) {
 
   var tabs = RESULT_TABS.map(function (t) {
     return [t[0], '=IFERROR(' + query(range(t[1]), PASS_WHERE) + sep + '"")'];
-  }).concat([
+  }).concat(FAIL_TABS.map(function (t) {
+    return [t[0], '=IFERROR(' + query(range(t[1]), FAIL_WHERE) + sep + '"")'];
+  })).concat([
     ['Total đỗ', '=IFERROR(' + passed + sep + '"")'],
     ['Total trượt', '=IFERROR(LET(all' + sep + everyone + sep + 'p' + sep + passed + sep +
       'FILTER(all' + sep + 'ISNA(MATCH(' + key('all') + sep + key('p') + sep + '0))))' + sep + '"")'],
   ]);
 
-  tabs.forEach(function (t) {
+  tabs.forEach(function (t, i) {
     var sh = ss.getSheetByName(t[0]) || ss.insertSheet(t[0]);
+    // Right after the three Ban tabs, in this order.
+    sh.activate();
+    ss.moveActiveSheet(BANS.length + i + 1);
     sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(function (pr) { pr.remove(); });
     sh.clear();
     sh.getRange(1, 1, 1, 3).setValues([['Họ và tên', 'Email', 'Số điện thoại']])
