@@ -142,8 +142,7 @@ function syncAll() {
   try {
     var src = SpreadsheetApp.openById(RESPOND_ID);
     var subs = readSource(src, 'online').concat(readSource(src, 'offline'));
-    var report = [];
-    var people = groupPeople(subs, report);
+    var people = groupPeople(subs);
 
     var out = SpreadsheetApp.getActiveSpreadsheet();
     var counts = BANS.map(function (ban) {
@@ -151,14 +150,15 @@ function syncAll() {
     });
     colorNguyenVong(out);
     addSummaryRows(out);
-    writeReport(out, people, report);
+    writeResultTabs(out);
+    var old = out.getSheetByName('Kiểm tra');
+    if (old) out.deleteSheet(old);
 
     var first = out.getSheetByName('Sheet1') || out.getSheetByName('Trang tính1');
     if (first && first.getLastRow() === 0 && out.getSheets().length > 1) out.deleteSheet(first);
 
     SpreadsheetApp.getActive().toast(
-      BANS.map(function (b, i) { return b + ': ' + counts[i]; }).join(' · ') +
-        ' — ' + report.length + ' mục trong "Kiểm tra"',
+      BANS.map(function (b, i) { return b + ': ' + counts[i]; }).join(' · '),
       'Đã cập nhật', 10
     );
   } finally {
@@ -226,6 +226,8 @@ function readSource(ss, source) {
       time: submissionTime(timeCol === undefined ? '' : raw[r][timeCol], timeText, r),
       timeText: timeText,
       info: info,
+      dob: info['Ngày sinh'],
+      sex: info['Giới tính'],
       nv: nv,
       common: cfg.common.map(function (q) { return pick(row, q); }),
       ban: ban,
@@ -284,47 +286,55 @@ function normFb(s) {
 }
 
 /**
- * Submissions are the same person when they share a phone number, an email or
- * a Facebook link AND the same name. A shared phone/email/link under two
- * different names is not merged — it goes to "Kiểm tra" for a human.
+ * Test rows to leave out entirely, by email. Not real applicants.
  */
-function groupPeople(subs, report) {
+var EXCLUDE_EMAILS = ['quantrungvu0701@gmail.com', 'ok@gmail.com'];
+
+/**
+ * Decisions taken by hand: each entry is one person. Every submission whose
+ * phone or email matches any key in the entry is merged into that person,
+ * whatever the name or birthday says. Keys: 'p:<phone>' or 'e:<email>'.
+ */
+var MANUAL_SAME = [];
+
+/** 6/1/2008, 06/01/2008 and a real date cell are one birthday. */
+function normDob(s) {
+  var m = /^(\d{1,2})\/(\d{1,2})\/(\d{4})$/.exec(String(s || '').trim());
+  return m ? (+m[1]) + '/' + (+m[2]) + '/' + m[3] : norm(s);
+}
+
+/**
+ * The rule: same name, phone, birthday and sex is one person (all four must be
+ * filled in). Anything looser is a human's call — see MANUAL_SAME.
+ */
+function groupPeople(subs) {
+  subs = subs.filter(function (s) {
+    return EXCLUDE_EMAILS.indexOf(normEmail(s.info['Email'])) === -1;
+  });
   var parent = subs.map(function (_, i) { return i; });
   function find(i) { return parent[i] === i ? i : (parent[i] = find(parent[i])); }
   function union(a, b) { parent[find(a)] = find(b); }
 
-  var byKey = {};
+  var first = {};
+  function link(key, i) {
+    if (first[key] === undefined) first[key] = i;
+    else union(i, first[key]);
+  }
   subs.forEach(function (s, i) {
-    var keys = [];
+    var n = normName(s.info['Họ và tên']);
     var p = normPhone(s.info['Số điện thoại']);
-    var e = normEmail(s.info['Email']);
-    var f = normFb(s.info['Link Facebook']);
-    if (p) keys.push('p:' + p);
-    if (e) keys.push('e:' + e);
-    if (f) keys.push('f:' + f);
-    keys.forEach(function (k) { (byKey[k] = byKey[k] || []).push(i); });
-  });
+    var d = s.dob ? normDob(s.dob) : '';
+    var x = norm(s.sex);
+    if (n && p && d && x) link('id:' + [n, p, d, x].join('|'), i);
 
-  var conflictSeen = {};
-  Object.keys(byKey).forEach(function (k) {
-    var list = byKey[k];
-    for (var a = 0; a < list.length; a++) {
-      for (var b = a + 1; b < list.length; b++) {
-        var sa = subs[list[a]], sb = subs[list[b]];
-        if (normName(sa.info['Họ và tên']) === normName(sb.info['Họ và tên'])) {
-          union(list[a], list[b]);
-        } else {
-          var tag = [list[a], list[b]].sort().join('-');
-          if (conflictSeen[tag]) continue;
-          conflictSeen[tag] = true;
-          report.push([
-            '⚠ Trùng ' + keyName(k) + ' nhưng khác tên — KHÔNG gộp, cần kiểm tra',
-            sa.info['Họ và tên'] + '  ·  ' + sb.info['Họ và tên'],
-            where(sa) + '  ·  ' + where(sb),
-          ]);
-        }
-      }
-    }
+    var e = normEmail(s.info['Email']);
+    MANUAL_SAME.forEach(function (entry, m) {
+      var hit = entry.some(function (k) {
+        var kind = k.slice(0, 2), val = k.slice(2);
+        return kind === 'p:' ? (p && normPhone(val) === p) : (e && normEmail(val) === e);
+      });
+      if (hit) link('manual:' + m, i);
+    });
   });
 
   var groups = {};
@@ -332,45 +342,18 @@ function groupPeople(subs, report) {
     var g = find(i);
     (groups[g] = groups[g] || []).push(s);
   });
-
-  var people = Object.keys(groups).map(function (g) {
-    return buildPerson(groups[g], report);
-  });
-
-  // Same name, nothing else in common: may be one person who changed both
-  // phone and email, or two people who share a name. A human decides.
-  var byName = {};
-  people.forEach(function (p) {
-    var n = normName(p.info['Họ và tên']);
-    (byName[n] = byName[n] || []).push(p);
-  });
-  Object.keys(byName).forEach(function (n) {
-    if (byName[n].length < 2) return;
-    report.push([
-      'Cần xem: trùng tên, khác SĐT/email/FB — để riêng ' + byName[n].length + ' dòng',
-      byName[n][0].info['Họ và tên'],
-      byName[n].map(function (p) { return p.subs.map(where).join(', '); }).join('  ·  '),
-    ]);
-  });
-
+  var people = Object.keys(groups).map(function (g) { return buildPerson(groups[g]); });
   people.sort(function (a, b) { return a.firstTime - b.firstTime; });
   return people;
 }
 
-function keyName(k) {
-  return k.charAt(0) === 'p' ? 'SĐT' : k.charAt(0) === 'e' ? 'email' : 'link Facebook';
-}
-function where(s) {
-  return (s.source === 'online' ? 'Online' : 'Offline') + ' dòng ' + s.row + ' (' + s.timeText + ')';
-}
-
 /**
  * One applicant from all their submissions. The latest submission wins for
- * their info and shared answers; each Ban's answers come from the latest
- * submission that applied to that Ban; the Ban list is every Ban they ever
- * applied to.
+ * their info (email included: only the newest one is kept) and shared
+ * answers; each Ban's answers come from the latest submission that applied
+ * to that Ban; the Ban list is every Ban they ever applied to.
  */
-function buildPerson(subs, report) {
+function buildPerson(subs) {
   subs.sort(function (a, b) { return a.time - b.time; });
   var latest = subs[subs.length - 1];
   var online = subs.filter(function (s) { return s.source === 'online'; });
@@ -384,18 +367,11 @@ function buildPerson(subs, report) {
       for (var i = subs.length - 1; i >= 0; i--) if (subs[i].info[k]) { info[k] = subs[i].info[k]; break; }
     }
   });
-  // Everyone who switched email to apply again: show every address used.
-  var emails = [];
-  subs.forEach(function (s) {
-    var e = s.info['Email'];
-    if (e && emails.map(normEmail).indexOf(normEmail(e)) === -1) emails.push(e);
-  });
-  info['Email'] = emails.join('\n');
 
   var bans = {};
   subs.forEach(function (s) { Object.keys(s.nv).forEach(function (b) { bans[b] = true; }); });
 
-  var person = {
+  return {
     id: idFor(subs[0]),
     info: info,
     subs: subs,
@@ -404,22 +380,6 @@ function buildPerson(subs, report) {
     online: sideFor(online),
     offline: sideFor(offline),
   };
-
-  if (online.length > 1) {
-    report.push(['Gộp: nộp online ' + online.length + ' lần — lấy câu trả lời mới nhất', info['Họ và tên'], online.map(where).join('  ·  ')]);
-  }
-  if (offline.length > 1) {
-    report.push(['Gộp: nộp offline ' + offline.length + ' lần — lấy câu trả lời mới nhất', info['Họ và tên'], offline.map(where).join('  ·  ')]);
-  }
-  if (online.length && offline.length) {
-    report.push(['Gộp: nộp cả online và offline (Onl + Off)', info['Họ và tên'], subs.map(where).join('  ·  ')]);
-  }
-  if (Object.keys(bans).length > 2) {
-    report.push(['⚠ ỨNG TUYỂN CẢ 3 BAN', info['Họ và tên'], subs.map(function (s) {
-      return where(s) + ': ' + Object.keys(s.nv).join(' + ');
-    }).join('  ·  ')]);
-  }
-  return person;
 }
 
 /** One source's answers for a person: shared ones from the latest, each Ban's from the latest that chose it. */
@@ -612,26 +572,6 @@ function readMarks(sh) {
   return marks;
 }
 
-function writeReport(ss, people, report) {
-  var sh = ss.getSheetByName('Kiểm tra') || ss.insertSheet('Kiểm tra');
-  sh.clear();
-  var stamp = Utilities.formatDate(new Date(), 'Asia/Ho_Chi_Minh', 'dd/MM/yyyy HH:mm');
-  var bans = BANS.map(function (b) {
-    return b + ': ' + people.filter(function (p) { return p.bans[b]; }).length;
-  }).join(' · ');
-  var rows = [
-    ['Cập nhật lúc ' + stamp, people.length + ' ứng viên (sau khi gộp)', bans],
-    ['Loại', 'Ứng viên', 'Chi tiết'],
-  ].concat(report.length ? report : [['Không có gì cần kiểm tra', '', '']]);
-  sh.getRange(1, 1, rows.length, 3).setValues(rows).setWrap(true).setVerticalAlignment('top');
-  sh.getRange(1, 1, 1, 3).setFontWeight('bold');
-  sh.getRange(2, 1, 1, 3).setFontWeight('bold').setBackground('#F3E3EA');
-  sh.setFrozenRows(2);
-  sh.setColumnWidth(1, 380);
-  sh.setColumnWidth(2, 220);
-  sh.setColumnWidth(3, 620);
-}
-
 /* ---------------------------------------------------------------- helpers */
 
 function blank(n) {
@@ -732,15 +672,15 @@ function colorNguyenVong(ss) {
   });
 }
 
-/** "," or ";" — found by asking the Sheet itself to add 1 and 2. */
+/** "," or ";" — found by asking the Sheet itself to add 1 and 2, on a scratch tab. */
 function argSeparator(ss) {
-  var sh = ss.getSheetByName('Kiểm tra') || ss.getSheets()[0];
-  var cell = sh.getRange(1, sh.getMaxColumns());
-  cell.setFormula('=SUM(1,2)');
+  if (argSeparator.cached) return argSeparator.cached;
+  var sh = ss.insertSheet('_probe');
+  sh.getRange(1, 1).setFormula('=SUM(1,2)');
   SpreadsheetApp.flush();
-  var ok = cell.getValue() === 3;
-  cell.clearContent();
-  return ok ? ',' : ';';
+  var ok = sh.getRange(1, 1).getValue() === 3;
+  ss.deleteSheet(sh);
+  return (argSeparator.cached = ok ? ',' : ';');
 }
 
 /** The first Ban named in an NV cell ("Ban Tổ chức (Onl)\n..." -> "Ban Tổ chức"). */
@@ -794,4 +734,56 @@ function removeSummaryRow(sh) {
     sh.setFrozenRows(0);
     sh.deleteRow(1);
   }
+}
+
+/**
+ * Result lists, live from the Ban tabs' "Kết quả vòng 1": Họ và tên, Email,
+ * Số điện thoại. "Đỗ <Ban>" holds everyone whose result there is anything
+ * other than blank, Pending or Trượt (Đỗ, Off, Onl + Off). "Total đỗ" is the
+ * three together, people who passed two Ban listed once; "Total trượt" is
+ * everyone else.
+ */
+var RESULT_TABS = [
+  ['Đỗ BTC', BAN_TC],
+  ['Đỗ BDN', BAN_DN],
+  ['Đỗ BTT', BAN_TT],
+];
+var PASS_WHERE = "Col1 is not null and Col1 <> 'Pending' and Col1 <> 'Trượt'";
+
+function writeResultTabs(ss) {
+  var sep = argSeparator(ss);
+  // Data starts on row 4 (count row, groups, headers); C = name, G = email, H = phone.
+  function range(ban) { return "'" + ban + "'!$A$4:$H"; }
+  function query(src, where) {
+    return 'QUERY(' + src + sep + '"select Col3, Col7, Col8 where ' + where + '"' + sep + '0)';
+  }
+  var all = 'VSTACK(' + BANS.map(range).join(sep) + ')';
+  var passed = 'UNIQUE(' + query(all, PASS_WHERE) + ')';
+  var everyone = 'UNIQUE(' + query(all, 'Col3 is not null') + ')';
+  var key = function (arr) {
+    return 'INDEX(' + arr + sep + sep + '1)&"|"&INDEX(' + arr + sep + sep + '2)';
+  };
+
+  var tabs = RESULT_TABS.map(function (t) {
+    return [t[0], '=IFERROR(' + query(range(t[1]), PASS_WHERE) + sep + '"")'];
+  }).concat([
+    ['Total đỗ', '=IFERROR(' + passed + sep + '"")'],
+    ['Total trượt', '=IFERROR(LET(all' + sep + everyone + sep + 'p' + sep + passed + sep +
+      'FILTER(all' + sep + 'ISNA(MATCH(' + key('all') + sep + key('p') + sep + '0))))' + sep + '"")'],
+  ]);
+
+  tabs.forEach(function (t) {
+    var sh = ss.getSheetByName(t[0]) || ss.insertSheet(t[0]);
+    sh.getProtections(SpreadsheetApp.ProtectionType.SHEET).forEach(function (pr) { pr.remove(); });
+    sh.clear();
+    sh.getRange(1, 1, 1, 3).setValues([['Họ và tên', 'Email', 'Số điện thoại']])
+      .setFontWeight('bold').setBackground('#3F0A26').setFontColor('#FFFFFF');
+    sh.getRange(2, 3, Math.max(sh.getMaxRows() - 1, 1), 1).setNumberFormat('@');
+    sh.getRange(2, 1).setFormula(t[1]);
+    sh.setFrozenRows(1);
+    sh.setColumnWidth(1, 220);
+    sh.setColumnWidth(2, 280);
+    sh.setColumnWidth(3, 140);
+    sh.protect().setDescription('Tự động từ các tab Ban').setWarningOnly(true);
+  });
 }
